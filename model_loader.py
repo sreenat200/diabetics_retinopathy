@@ -47,9 +47,29 @@ class GCSModelLoader:
         print(f"Downloading model from gs://{bucket_name}/{blob_name} to {local_path}...")
         
         try:
-            # Explicitly look for credentials if needed, but google-cloud-storage 
-            # usually picks up GOOGLE_APPLICATION_CREDENTIALS env var automatically.
-            storage_client = storage.Client()
+            # Check for credentials JSON string in env vars first
+            credentials_json = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+            print(f"DEBUG: GOOGLE_APPLICATION_CREDENTIALS_JSON is {'Present' if credentials_json else 'Missing'}")
+            
+            storage_client = None
+            
+            if credentials_json:
+                import json
+                from google.oauth2 import service_account
+                try:
+                    cred_info = json.loads(credentials_json)
+                    credentials = service_account.Credentials.from_service_account_info(cred_info)
+                    storage_client = storage.Client(credentials=credentials, project=cred_info.get('project_id'))
+                    print("Initialized GCS client using GOOGLE_APPLICATION_CREDENTIALS_JSON")
+                except Exception as json_err:
+                    print(f"Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON: {json_err}")
+                    # Fallthrough to default
+            
+            if not storage_client:
+                print("DEBUG: Falling back to default credentials (file-based)")
+                # Fallback to default credentials (file path in GOOGLE_APPLICATION_CREDENTIALS)
+                storage_client = storage.Client()
+
             bucket = storage_client.bucket(bucket_name)
             blob = bucket.blob(blob_name)
             
