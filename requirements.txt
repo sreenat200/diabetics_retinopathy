@@ -4,7 +4,8 @@ Flask-Login
 tensorflow
 keras
 numpy
-opencv-python
+opencv-python-headless
+
 pillow
 pandas
 reportlab
