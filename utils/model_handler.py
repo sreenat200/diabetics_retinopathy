@@ -16,26 +16,28 @@ class ModelHandler:
         self.load_model()
     
     def load_model(self):
-        """Load the pre-trained model"""
-        import tensorflow as tf
-
-        if not os.path.exists(self.model_path):
-            raise FileNotFoundError(f"Model file not found at {self.model_path}")
+        """Load the pre-trained model using GCSModelLoader"""
+        from model_loader import GCSModelLoader
         
         try:
-            self.model = tf.keras.models.load_model(
-                self.model_path,
-                custom_objects=None,  # Add custom objects if model uses custom layers
-                compile=True
-            )
-            print(f"Model loaded successfully from {self.model_path}")
-            print(f"Model input shape: {self.model.input_shape}")
-            print(f"Model output shape: {self.model.output_shape}")
-            if not self.model:
+            loader = GCSModelLoader.get_instance()
+            self.model = loader.get_model()
+            
+            print(f"Model loaded successfully by ModelHandler")
+            if self.model:
+                try:
+                    print(f"Model input shape: {self.model.input_shape}")
+                    print(f"Model output shape: {self.model.output_shape}")
+                except AttributeError:
+                    # Some models (like SaveModel format) might not expose these directly 
+                    # in the same way depending on how they are loaded/saved
+                    pass
+            else:
                 raise RuntimeError("Model loaded but is None")
         except Exception as e:
-            print(f"CRITICAL: Error loading model: {str(e)}")
-            raise RuntimeError(f"Failed to load model from {self.model_path}: {str(e)}")
+            print(f"CRITICAL: Error loading model via GCSModelLoader: {str(e)}")
+            raise RuntimeError(f"Failed to load model: {str(e)}")
+
     
     def preprocess_image(self, image_path):
         """Preprocess image matching training pipeline"""

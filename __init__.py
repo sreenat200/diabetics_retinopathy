@@ -30,6 +30,16 @@ def create_app():
     # Initialize services
     email_service = EmailService()
     
+    # Initialize Model Logic (Download/Load once)
+    try:
+        from model_loader import GCSModelLoader
+        loader = GCSModelLoader.get_instance()
+        loader.initialize() # Triggers download if needed
+    except Exception as e:
+        print(f"WARNING: Model initialization failed in create_app: {e}")
+        # We don't crash here so the app can still start (health checks), 
+        # but ModelHandler will likely fail later if model is missing.
+    
     try:
         model_handler = ModelHandler()
     except Exception as e:

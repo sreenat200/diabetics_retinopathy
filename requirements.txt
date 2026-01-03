@@ -14,8 +14,9 @@ pyotp
 qrcode
 python-dotenv
 beautifulsoup4
-sib_api_v3_sdk
+
 Flask-Migrate
 pymysql
 cryptography
 gunicorn
+google-cloud-storage
