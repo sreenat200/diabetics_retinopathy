@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - RetinaAI{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 p-4 sm:p-8 font-sans">
+    
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8">
+        <div>
+            <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight drop-shadow-sm">Hello, {{ current_user.first_name }}!</h1>
+            <p class="text-slate-600 mt-2 text-base font-medium">Here is what's happening with your patients today.</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="relative group">
+                <select id="statusFilter" class="appearance-none pl-4 pr-10 py-3 bg-white/60 backdrop-blur-md border border-white/50 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-lg shadow-indigo-500/10 cursor-pointer hover:bg-white/80 transition-all">
+                    <option value="">All Status</option>
+                    <option value="healthy">Healthy</option>
+                    <option value="at_risk">At Risk</option>
+                    <option value="critical">Critical</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 group-hover:text-indigo-600 transition-colors">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('main.register_patient') }}"
+                class="flex items-center px-6 py-3 bg-slate-900/90 backdrop-blur-sm hover:bg-slate-800 text-white rounded-2xl font-semibold text-sm transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:scale-95 border border-slate-700/50">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                New Patient
+            </a>
+            <a href="{{ url_for('main.analyze') }}"
+                class="flex items-center px-4 py-3 bg-white/60 backdrop-blur-md hover:bg-white/90 text-slate-900 border border-white/50 rounded-2xl font-semibold text-sm transition-all shadow-lg shadow-indigo-500/10 hover:shadow-xl active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        
+        {% set ns = namespace(risk_count=0) %}
+        {% for p in patients %}
+            {% if p.diagnoses and p.diagnoses[-1].class_name != 'No DR' %}
+                {% set ns.risk_count = ns.risk_count + 1 %}
+            {% endif %}
+        {% endfor %}
+        {% set healthy_count = patients|length - ns.risk_count %}
+
+        <a href="{{ url_for('main.patients') }}" class="group relative overflow-hidden bg-slate-900 border border-slate-800 p-8 rounded-[2rem] shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer col-span-1">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
+            <div class="absolute top-0 right-0 p-6 opacity-50 group-hover:opacity-100 transition-opacity">
+                <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white rotate-45 group-hover:rotate-0 transition-transform duration-300 border border-white/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </div>
+            </div>
+            <h3 class="text-slate-400 text-sm font-bold mb-2 relative z-10">Total Patients</h3>
+            <div class="flex items-end gap-3 relative z-10">
+                <p class="text-4xl font-bold text-white">{{ patients|length }}</p>
+                <span class="mb-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
+                    Active
+                </span>
+            </div>
+            <p class="text-slate-500 text-xs mt-4 relative z-10">Registered in system</p>
+        </a>
+
+        <div class="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2rem] shadow-xl shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 group">
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
+            
+            <div class="flex justify-between items-start mb-4 relative z-10">
+                <h3 class="text-indigo-100 text-sm font-bold">Total Diagnoses</h3>
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white shadow-sm border border-white/10">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 relative z-10">
+                <p class="text-4xl font-bold text-white drop-shadow-sm">
+                    {% set total_diagnoses = patients|map(attribute='diagnoses')|map('length')|sum %}
+                    {{ total_diagnoses }}
+                </p>
+                <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-white/20 text-white border border-white/20">
+                   Records
+                </span>
+            </div>
+        </div>
+
+        {% if ns.risk_count == 0 %}
+            {% set risk_grad = 'from-emerald-500 to-emerald-600' %}
+            {% set risk_shadow = 'shadow-emerald-500/30' %}
+            {% set risk_msg = 'All Clear' %}
+        {% elif ns.risk_count < 5 %}
+            {% set risk_grad = 'from-amber-400 to-amber-500' %}
+            {% set risk_shadow = 'shadow-amber-500/30' %}
+            {% set risk_msg = 'Monitor' %}
+        {% else %}
+            {% set risk_grad = 'from-rose-500 to-rose-600' %}
+            {% set risk_shadow = 'shadow-rose-500/30' %}
+            {% set risk_msg = 'Action Needed' %}
+        {% endif %}
+
+        <a href="{{ url_for('main.patients') }}?status=at_risk" 
+           class="relative overflow-hidden bg-gradient-to-br {{ risk_grad }} p-8 rounded-[2rem] shadow-xl {{ risk_shadow }} transition-all duration-300 cursor-pointer hover:-translate-y-1 group">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-white/20 transition-all"></div>
+            <div class="flex justify-between items-start mb-4 relative z-10">
+                <h3 class="text-white/90 text-sm font-bold">At Risk Cases</h3>
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white shadow-sm border border-white/10">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+            </div>
+            <p class="text-4xl font-bold text-white drop-shadow-sm relative z-10">{{ ns.risk_count }}</p>
+            <p class="text-xs text-white font-bold mt-1 bg-white/20 border border-white/20 inline-block px-2 py-1 rounded-md relative z-10">
+                {{ risk_msg }}
+            </p>
+        </a>
+
+        {% if healthy_count == 0 %}
+            {% set healthy_grad = 'from-slate-400 to-slate-500' %}
+            {% set healthy_shadow = 'shadow-slate-500/30' %}
+            {% set healthy_msg = 'No Data' %}
+        {% elif healthy_count < (patients|length / 2) %}
+            {% set healthy_grad = 'from-amber-400 to-amber-500' %}
+            {% set healthy_shadow = 'shadow-amber-500/30' %}
+            {% set healthy_msg = 'Minority' %}
+        {% else %}
+            {% set healthy_grad = 'from-emerald-500 to-emerald-600' %}
+            {% set healthy_shadow = 'shadow-emerald-500/30' %}
+            {% set healthy_msg = 'Stable' %}
+        {% endif %}
+
+        <a href="{{ url_for('main.patients') }}?status=healthy" 
+           class="relative overflow-hidden bg-gradient-to-br {{ healthy_grad }} p-8 rounded-[2rem] shadow-xl {{ healthy_shadow }} transition-all duration-300 cursor-pointer hover:-translate-y-1 group">
+            <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -ml-10 -mb-10 group-hover:bg-white/20 transition-all"></div>
+            <div class="flex justify-between items-start mb-4 relative z-10">
+                <h3 class="text-white/90 text-sm font-bold">Healthy Cases</h3>
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white shadow-sm border border-white/10">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+            </div>
+            <p class="text-4xl font-bold text-white drop-shadow-sm relative z-10">{{ healthy_count }}</p>
+            <p class="text-xs text-white font-bold mt-1 bg-white/20 border border-white/20 inline-block px-2 py-1 rounded-md relative z-10">
+                {{ healthy_msg }}
+            </p>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white/50 backdrop-blur-xl border border-white/60 p-8 rounded-[2rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] lg:col-span-2 relative overflow-hidden group">
+            <div class="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-all duration-500"></div>
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 relative z-10 gap-4">
+                <div>
+                    <h3 class="font-bold text-xl text-slate-900">Patient Trends</h3>
+                    <p class="text-sm text-slate-500 font-medium" id="chartSubtitle">Overview of total activity (All Time)</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="relative">
+                        <select id="viewMode" class="appearance-none bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-700 text-sm font-bold py-2 pl-4 pr-8 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:bg-white transition-colors cursor-pointer">
+                            <option value="all">All Time</option>
+                            <option value="year">Specific Year</option>
+                            <option value="month">Specific Month</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    <div id="yearPickerContainer" class="relative hidden">
+                        <input type="number" id="yearPicker" min="2020" max="2030" placeholder="YYYY" class="w-24 bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-700 text-sm font-bold py-2 px-3 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:bg-white transition-colors">
+                    </div>
+                    <div id="monthPickerContainer" class="relative hidden">
+                        <input type="month" id="monthPicker" class="bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-700 text-sm font-bold py-2 px-3 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:bg-white transition-colors cursor-pointer">
+                    </div>
+                    <button id="refreshBtn" title="Refresh Data" class="p-2 bg-white/70 hover:bg-white rounded-xl shadow-sm border border-slate-200 text-slate-600 hover:text-indigo-600 transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                    <div id="chartLoader" class="hidden text-indigo-500 ml-1">
+                        <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="h-64 w-full relative z-10"><canvas id="growthChart"></canvas></div>
+        </div>
+
+        <div class="bg-white/50 backdrop-blur-xl border border-white/60 p-8 rounded-[2rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] lg:col-span-1">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-xl text-slate-900">Distribution</h3>
+                <button class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                </button>
+            </div>
+            <div class="relative h-48 mb-6"><canvas id="diagnosisChart"></canvas></div>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center p-3 rounded-xl bg-white/60 border border-white/50 shadow-sm backdrop-blur-sm">
+                    <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-emerald-400 mr-3 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span><span class="text-sm font-bold text-slate-600">No DR</span></div>
+                    <span class="font-bold text-slate-800" id="stat-no-dr">0%</span>
+                </div>
+                <div class="flex justify-between items-center p-3 rounded-xl bg-white/60 border border-white/50 shadow-sm backdrop-blur-sm">
+                    <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-amber-400 mr-3 shadow-[0_0_8px_rgba(251,191,36,0.5)]"></span><span class="text-sm font-bold text-slate-600">Mild/Mod</span></div>
+                    <span class="font-bold text-slate-800" id="stat-mild-mod">0%</span>
+                </div>
+                <div class="flex justify-between items-center p-3 rounded-xl bg-white/60 border border-white/50 shadow-sm backdrop-blur-sm">
+                    <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-rose-400 mr-3 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></span><span class="text-sm font-bold text-slate-600">Critical</span></div>
+                    <span class="font-bold text-slate-800" id="stat-severe-pro">0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white/60 backdrop-blur-xl border border-white/60 rounded-[2rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] overflow-hidden">
+        <div class="p-8 border-b border-slate-200/60 flex justify-between items-center bg-white/40">
+            <div>
+                <h3 class="font-bold text-xl text-slate-900">Recent Patients</h3>
+                <p class="text-sm text-slate-500 mt-1 font-medium">Latest registered cases</p>
+            </div>
+            <a href="{{ url_for('main.patients') }}" class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl hover:scale-105">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50/50 backdrop-blur-sm">
+                    <tr>
+                        <th class="px-8 py-5 text-left text-xs font-extrabold text-slate-400 uppercase tracking-wider">Patient Info</th>
+                        <th class="px-8 py-5 text-left text-xs font-extrabold text-slate-400 uppercase tracking-wider">Date</th>
+                        <th class="px-8 py-5 text-left text-xs font-extrabold text-slate-400 uppercase tracking-wider">Status</th>
+                        <th class="px-8 py-5 text-right text-xs font-extrabold text-slate-400 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100/50">
+                    {% for patient in patients[:5] %}
+                    {% set latest = patient.diagnoses[-1] if patient.diagnoses else None %}
+                    <tr class="hover:bg-white/60 transition-colors group">
+                        <td class="px-8 py-5 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-white flex items-center justify-center text-slate-700 font-bold text-sm mr-4 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                                    {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-900">{{ patient.first_name }} {{ patient.last_name }}</div>
+                                    <div class="text-xs text-slate-500 font-medium">{{ patient.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-5 whitespace-nowrap text-sm text-slate-600 font-bold">
+                            {{ latest.created_at.strftime('%b %d, %Y') if latest else 'N/A' }}
+                        </td>
+                        <td class="px-8 py-5 whitespace-nowrap">
+                            {% if latest %}
+                            {% if latest.class_name == 'No DR' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100/50 text-emerald-700 border border-emerald-200">Healthy</span>
+                            {% elif latest.class_name in ['Mild', 'Moderate'] %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100/50 text-amber-700 border border-amber-200">Monitor</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100/50 text-rose-700 border border-rose-200">Critical</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-200/50 text-slate-600 border border-slate-200">New</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="viewPatientDetails('{{ patient.id }}')"
+                                class="inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-lg hover:shadow-indigo-500/50 transition-all transform hover:-translate-y-0.5 ml-auto">
+                                View
+                                <svg class="w-3 h-3 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="patientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50 transition-opacity">
+    <div class="bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all scale-100 border border-white/50">
+        <div class="px-8 py-6 border-b border-slate-200/50 flex justify-between items-center bg-white/40">
+            <h2 class="text-2xl font-bold text-slate-900">Patient Details</h2>
+            <button onclick="closePatientModal()" class="w-8 h-8 rounded-full bg-white text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-colors shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="modalContent" class="p-8"></div>
+    </div>
+</div>
+
+<script>
+    // --- Data Passed from Flask (Initial Load) ---
+    const patientsData = {{ patients_json| tojson }};
+    const chartDiagnosisData = {{ chart_diagnosis_data| tojson }};
+    const initialLabels = {{ growth_labels| tojson }};
+    const initialPatientsData = {{ growth_patients_data| tojson }};
+    const initialDiagnosesData = {{ growth_diagnoses_data| tojson }};
+
+    // --- Search and Filter Logic ---
+    const statusFilter = document.getElementById('statusFilter');
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('status')) statusFilter.value = urlParams.get('status');
+    });
+    
+    statusFilter.addEventListener('change', (e) => {
+        const status = e.target.value;
+        let params = new URLSearchParams(window.location.search);
+        status ? params.set('status', status) : params.delete('status');
+        window.location.href = `/dashboard?${params.toString()}`;
+    });
+
+    // --- Chart Logic ---
+    document.addEventListener('DOMContentLoaded', function () {
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#64748b';
+
+        // 1. Diagnosis Distribution (Doughnut)
+        const ctxDiag = document.getElementById('diagnosisChart').getContext('2d');
+        const totalDiag = chartDiagnosisData.reduce((a, b) => a + b, 0) || 1;
+        
+        document.getElementById('stat-no-dr').textContent = Math.round((chartDiagnosisData[0] / totalDiag) * 100) + '%';
+        document.getElementById('stat-mild-mod').textContent = Math.round((chartDiagnosisData[1] / totalDiag) * 100) + '%';
+        document.getElementById('stat-severe-pro').textContent = Math.round((chartDiagnosisData[2] / totalDiag) * 100) + '%';
+
+        new Chart(ctxDiag, {
+            type: 'doughnut',
+            data: {
+                labels: ['No DR', 'Mild/Moderate', 'Severe/Proliferative'],
+                datasets: [{
+                    data: chartDiagnosisData,
+                    backgroundColor: ['#34d399', '#fbbf24', '#f43f5e'],
+                    borderWidth: 0,
+                    hoverOffset: 10,
+                    borderRadius: 20,
+                    spacing: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 2. Growth Chart (Line)
+        const ctxGrowth = document.getElementById('growthChart').getContext('2d');
+        const gradientBlue = ctxGrowth.createLinearGradient(0, 0, 0, 400);
+        gradientBlue.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+        gradientBlue.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+        const growthChart = new Chart(ctxGrowth, {
+            type: 'line',
+            data: {
+                labels: initialLabels, 
+                datasets: [{
+                    label: 'New Patients',
+                    data: initialPatientsData,
+                    borderColor: '#6366f1',
+                    backgroundColor: gradientBlue,
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Diagnoses',
+                    data: initialDiagnosesData,
+                    borderColor: '#94a3b8',
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { display: false } },
+                    x: { grid: { display: true, color: 'rgba(255, 255, 255, 0.5)', drawBorder: false }, border: { display: false }, ticks: { font: { size: 10 }, color: '#94a3b8', maxTicksLimit: 10 } }
+                },
+                plugins: {
+                    legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, usePointStyle: true } },
+                    tooltip: { backgroundColor: 'rgba(30, 41, 59, 0.9)', titleColor: '#f8fafc', bodyColor: '#e2e8f0', padding: 12, cornerRadius: 12, displayColors: true, usePointStyle: true }
+                }
+            }
+        });
+
+        // --- Dynamic Data & Auto-Refresh ---
+        const viewMode = document.getElementById('viewMode');
+        const yearPickerContainer = document.getElementById('yearPickerContainer');
+        const monthPickerContainer = document.getElementById('monthPickerContainer');
+        const yearPicker = document.getElementById('yearPicker');
+        const monthPicker = document.getElementById('monthPicker');
+        const subtitle = document.getElementById('chartSubtitle');
+        const loader = document.getElementById('chartLoader');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        // Defaults
+        const currentYear = new Date().getFullYear();
+        yearPicker.value = currentYear;
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        monthPicker.value = currentMonth;
+
+        function updateInputVisibility() {
+            const mode = viewMode.value;
+            yearPickerContainer.classList.add('hidden');
+            monthPickerContainer.classList.add('hidden');
+
+            if (mode === 'year') {
+                yearPickerContainer.classList.remove('hidden');
+                subtitle.textContent = "Monthly activity for " + yearPicker.value;
+            } else if (mode === 'month') {
+                monthPickerContainer.classList.remove('hidden');
+                subtitle.textContent = "Daily activity for " + monthPicker.value;
+            } else {
+                subtitle.textContent = "Overview of total activity (All Time)";
+            }
+        }
+
+        async function fetchData(isAutoRefresh = false) {
+            const mode = viewMode.value;
+            let queryParam = `mode=${mode}`;
+
+            if (mode === 'year') {
+                queryParam += `&year=${yearPicker.value}`;
+            } else if (mode === 'month') {
+                queryParam += `&month=${monthPicker.value}`;
+            }
+
+            queryParam += `&t=${new Date().getTime()}`;
+
+            if (!isAutoRefresh) loader.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`/dashboard/chart-data?${queryParam}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    growthChart.data.labels = data.labels;
+                    growthChart.data.datasets[0].data = data.patients;
+                    growthChart.data.datasets[1].data = data.diagnoses;
+                    growthChart.update();
+                    
+                    if (!isAutoRefresh) updateInputVisibility(); 
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                if (!isAutoRefresh) loader.classList.add('hidden');
+            }
+        }
+
+        viewMode.addEventListener('change', () => { updateInputVisibility(); fetchData(false); });
+        yearPicker.addEventListener('change', () => fetchData(false));
+        monthPicker.addEventListener('change', () => fetchData(false));
+        refreshBtn.addEventListener('click', () => { fetchData(false); });
+
+        updateInputVisibility();
+
+        setInterval(() => {
+            fetchData(true); 
+        }, 10000); 
+    });
+
+    // --- Modal Logic ---
+    function viewPatientDetails(patientId) {
+        const patient = patientsData.find(p => p.id === parseInt(patientId));
+        if (!patient) return;
+
+        const groupedDiagnoses = {};
+        patient.diagnoses.forEach(d => {
+            const sessionId = d.batch_session_id || `individual_${d.id}`;
+            const dateKey = new Date(d.created_at).toLocaleDateString('en-US', { 
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            if (!groupedDiagnoses[sessionId]) {
+                groupedDiagnoses[sessionId] = {
+                    date: dateKey,
+                    classes: new Set(),
+                    isBatch: !!d.batch_session_id,
+                    batchSessionId: d.batch_session_id
+                };
+            }
+            groupedDiagnoses[sessionId].classes.add(d.class_name);
+        });
+
+        let html = `
+        <div class="space-y-8 font-sans">
+            <div class="flex items-center space-x-6">
+                <div class="h-20 w-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white font-bold text-2xl shadow-xl border-4 border-white/50">
+                    ${patient.first_name[0]}${patient.last_name[0]}
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">${patient.first_name} ${patient.last_name}</h3>
+                    <p class="text-slate-500 font-medium">${patient.email || 'No email'}</p>
+                    <div class="flex items-center mt-3 space-x-2">
+                        <span class="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs rounded-full font-bold uppercase tracking-wider border border-indigo-100">ID: ${patient.medical_id || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-6">
+                <div class="p-6 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-100">
+                    <p class="text-xs text-slate-400 font-bold uppercase mb-2">Phone</p>
+                    <p class="text-slate-900 font-bold text-lg">${patient.phone || 'N/A'}</p>
+                </div>
+                <div class="p-6 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-100">
+                    <p class="text-xs text-slate-400 font-bold uppercase mb-2">Age</p>
+                    <p class="text-slate-900 font-bold text-lg">${patient.age ? patient.age + ' years' : 'N/A'}</p>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-bold text-slate-900 text-lg">History</h4>
+                    <button onclick="downloadBatchHistoryReport('${patient.id}')" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg">Download Report</button>
+                </div>
+                <div class="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    ${Object.keys(groupedDiagnoses).length > 0 ? Object.values(groupedDiagnoses).map(g => `
+                        <div class="bg-white/80 border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="text-sm text-slate-400 font-bold">${g.date}</div>
+                                ${g.isBatch ? `<button onclick="downloadBatchSessionReport('${patient.id}', '${g.batchSessionId}')" class="text-indigo-600 text-xs font-bold uppercase tracking-wider flex items-center bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors">Session Report</button>` : ''}
+                            </div>
+                            <div class="text-slate-900 font-semibold">${Array.from(g.classes).join(', ')}</div>
+                        </div>`).join('') : '<div class="text-center py-8 bg-slate-50/50 rounded-2xl text-slate-400 text-sm font-medium border border-dashed border-slate-300">No diagnoses recorded yet.</div>'}
+                </div>
+            </div>
+        </div>`;
+        document.getElementById('modalContent').innerHTML = html;
+        document.getElementById('patientModal').classList.remove('hidden');
+    }
+
+    function closePatientModal() { document.getElementById('patientModal').classList.add('hidden'); }
+    document.getElementById('patientModal').addEventListener('click', (e) => { if(e.target===document.getElementById('patientModal')) closePatientModal(); });
+
+    // Report Downloads
+    function downloadBatchHistoryReport(patientId) {
+        fetch('{{ url_for("report.download_batch_history_report") }}', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patient_id: parseInt(patientId), report_type: 'pdf' }) })
+        .then(res => !res.ok ? res.json().then(d => Promise.reject(d.error)) : res.blob())
+        .then(blob => { const u = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href=u; a.download=`patient_batch_history_${patientId}.pdf`; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(u); document.body.removeChild(a); })
+        .catch(e => alert('Error: ' + e));
+    }
+    function downloadBatchSessionReport(patientId, batchSessionId) {
+        fetch('{{ url_for("report.download_batch_session_report") }}', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patient_id: parseInt(patientId), batch_session_id: batchSessionId, report_type: 'pdf' }) })
+        .then(res => !res.ok ? res.json().then(d => Promise.reject(d.error)) : res.blob())
+        .then(blob => { const u = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href=u; a.download=`batch_report_${batchSessionId}.pdf`; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(u); document.body.removeChild(a); })
+        .catch(e => alert('Error: ' + e));
+    }
+</script> 
+{% endblock %}

@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+
+{% block title %}Patients Directory - RetinaAI{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-1rem)] flex flex-col font-sans gap-4 p-2 sm:p-4 sm:pb-2 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 rounded-xl">
+    
+    <div class="shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4 px-2">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight drop-shadow-sm">Patient Directory</h1>
+            <p class="text-slate-500 text-sm font-medium">Manage records and search the database.</p>
+        </div>
+        <a href="{{ url_for('main.analyze') }}"
+            class="flex items-center px-5 py-2.5 bg-slate-900/90 backdrop-blur-sm hover:bg-slate-800 text-white rounded-md font-bold text-sm transition-all shadow-lg hover:-translate-y-0.5 active:scale-95 border border-slate-700/50">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            New Analysis
+        </a>
+    </div>
+
+    <div class="shrink-0 bg-white/60 backdrop-blur-xl border border-white/60 rounded-md shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-blue-100/50 flex items-center justify-center text-blue-600 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <h3 class="font-bold text-slate-900 text-sm">Search & Filter</h3>
+                <span id="activeFiltersCount" class="ml-2 px-2 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded-sm hidden">0</span>
+            </div>
+            <button id="clearFiltersBtn" class="text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors flex items-center bg-white/50 px-2 py-1 rounded hover:bg-white border border-transparent hover:border-slate-200">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                Clear
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div class="md:col-span-5">
+                <div class="relative group">
+                    <input type="text" id="universalSearch" placeholder="Name, ID, email..."
+                        class="w-full pl-4 pr-10 py-2.5 bg-white/80 border border-slate-200 rounded-md focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-slate-900 placeholder-slate-400 text-sm shadow-sm group-hover:bg-white">
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-3">
+                <div class="relative group">
+                    <select id="filterStatus" class="w-full px-4 py-2.5 bg-white/80 border border-slate-200 rounded-md focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-slate-900 appearance-none cursor-pointer text-sm shadow-sm group-hover:bg-white">
+                        <option value="">All Status</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-4">
+                <div class="flex gap-2">
+                    <input type="date" id="filterFromDate" 
+                        class="w-full px-3 py-2.5 bg-white/80 border border-slate-200 rounded-md focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-slate-900 text-sm shadow-sm hover:bg-white">
+                    <input type="date" id="filterToDate" 
+                        class="w-full px-3 py-2.5 bg-white/80 border border-slate-200 rounded-md focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-slate-900 text-sm shadow-sm hover:bg-white">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 min-h-0 flex flex-col bg-white/60 backdrop-blur-xl border border-white/60 rounded-md shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+        <div class="shrink-0 p-5 border-b border-slate-200/60 flex justify-between items-center bg-white/40">
+            <div>
+                <h3 class="font-bold text-lg text-slate-900">Patient Records</h3>
+                <p class="text-xs text-slate-500 font-medium mt-0.5">Showing <span id="patientCount" class="font-bold text-slate-700">0</span> records</p>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+            <table class="w-full relative">
+                <thead class="bg-slate-50/90 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+                    <tr>
+                        <th class="px-3 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Patient Name</th>
+                        <th class="px-3 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Patient ID</th>
+                        <th class="px-3 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Date</th>
+                        <th class="px-3 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Mobile No</th>
+                        <th class="px-3 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Status</th>
+                        <th class="px-3 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Diagnoses</th>
+                        <th class="px-3 py-4 text-right text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100/50" id="patientsTableBody">
+                </tbody>
+            </table>
+            
+            <div id="emptyState" class="text-center py-16 hidden">
+                <div class="w-16 h-16 bg-white rounded flex items-center justify-center mx-auto mb-4 text-slate-300 shadow-sm border border-slate-100">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">No patients found</h3>
+                <p class="text-slate-500 text-sm">Try adjusting your search filters.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="patientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50 transition-opacity">
+    <div class="bg-white/90 backdrop-blur-2xl rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all scale-100 border border-white/50">
+        <div class="px-8 py-6 border-b border-slate-200/50 flex justify-between items-center bg-white/40 sticky top-0 z-20 backdrop-blur-xl">
+            <h2 class="text-2xl font-bold text-slate-900">Patient Details</h2>
+            <button onclick="closePatientModal()" class="w-9 h-9 rounded bg-white text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-colors shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="modalContent" class="p-8"></div>
+    </div>
+</div>
+
+<script>
+    const patientsData = {{ patients_json| tojson }};
+
+    // DOM Elements
+    const universalSearchInput = document.getElementById('universalSearch');
+    const filterStatusSelect = document.getElementById('filterStatus');
+    const filterFromDateInput = document.getElementById('filterFromDate');
+    const filterToDateInput = document.getElementById('filterToDate');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const patientsTableBody = document.getElementById('patientsTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const patientCount = document.getElementById('patientCount');
+    const activeFiltersCount = document.getElementById('activeFiltersCount');
+
+    // Extract unique status values for dropdown
+    function extractUniqueStatuses() {
+        const statusSet = new Set();
+        patientsData.forEach(patient => {
+            if (patient.diagnoses && patient.diagnoses.length > 0) {
+                const latest = patient.diagnoses[0];
+                if (latest && latest.class_name) {
+                    if (latest.class_name === 'No DR') statusSet.add('Healthy');
+                    else if (['Mild', 'Moderate'].includes(latest.class_name)) statusSet.add('At Risk');
+                    else if (['Severe', 'Proliferative'].includes(latest.class_name)) statusSet.add('Critical');
+                    else statusSet.add(latest.class_name);
+                }
+            } else {
+                statusSet.add('New');
+            }
+        });
+        return Array.from(statusSet).sort();
+    }
+
+    // Populate status dropdown
+    function populateStatusDropdown() {
+        const uniqueStatuses = extractUniqueStatuses();
+        while (filterStatusSelect.options.length > 1) {
+            filterStatusSelect.remove(1);
+        }
+        uniqueStatuses.forEach(status => {
+            const option = document.createElement('option');
+            option.value = status.toLowerCase().replace(/\s+/g, '_');
+            option.textContent = status;
+            filterStatusSelect.appendChild(option);
+        });
+    }
+
+    // URL Params Logic
+    function getURLParams() {
+        const params = new URLSearchParams(window.location.search);
+        return { search: params.get('search') || '', status: params.get('status') || '' };
+    }
+
+    function applyURLParams() {
+        const params = getURLParams();
+        if (params.search) universalSearchInput.value = params.search;
+        if (params.status) filterStatusSelect.value = params.status;
+        applyFilters();
+    }
+
+    function updateActiveFiltersCount() {
+        let count = 0;
+        if (universalSearchInput.value) count++;
+        if (filterStatusSelect.value) count++;
+        if (filterFromDateInput.value) count++;
+        if (filterToDateInput.value) count++;
+        
+        if (count > 0) {
+            activeFiltersCount.textContent = count;
+            activeFiltersCount.classList.remove('hidden');
+        } else {
+            activeFiltersCount.classList.add('hidden');
+        }
+    }
+
+    // Render Table
+    function renderPatients(patients) {
+        patientsTableBody.innerHTML = '';
+        patientCount.textContent = patients.length;
+
+        if (patients.length === 0) {
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        patients.forEach(patient => {
+            const latest = patient.diagnoses && patient.diagnoses.length > 0 ? patient.diagnoses[0] : null;
+            const statusBadge = getStatusBadge(latest);
+            const createdDate = new Date(patient.created_at || new Date()).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-white/60 transition-colors group border-b border-slate-50 last:border-0';
+            
+            // Reduced padding to px-3 to keep columns tight and action button visible
+            row.innerHTML = `
+                <td class="px-3 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="h-9 w-9 rounded bg-white flex items-center justify-center text-slate-700 font-bold text-xs mr-3 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                            ${patient.first_name[0]}${patient.last_name[0]}
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-900">${patient.first_name} ${patient.last_name}</div>
+                            <div class="text-[11px] text-slate-500 font-medium">${patient.email || 'No email'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-xs font-bold text-slate-600">
+                    <span class="bg-white px-2 py-1 rounded border border-slate-200/50">${patient.medical_id || 'N/A'}</span>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                    ${createdDate}
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                    ${patient.phone || 'N/A'}
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap">
+                    ${statusBadge}
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                    ${patient.diagnoses ? patient.diagnoses.length + ' records' : '0 records'}
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button onclick="viewPatientDetails('${patient.id}')"
+                        class="inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold rounded shadow-md hover:shadow-indigo-500/50 transition-all transform hover:-translate-y-0.5 ml-auto">
+                        View
+                        <svg class="w-3 h-3 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </td>
+            `;
+            patientsTableBody.appendChild(row);
+        });
+    }
+
+    function getStatusBadge(diagnosis) {
+        if (!diagnosis) {
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">New</span>';
+        }
+        const statusMap = {
+            'No DR': { bg: 'bg-emerald-100/50', text: 'text-emerald-700', border: 'border-emerald-200', label: 'Healthy' },
+            'Mild': { bg: 'bg-amber-100/50', text: 'text-amber-700', border: 'border-amber-200', label: 'At Risk' },
+            'Moderate': { bg: 'bg-orange-100/50', text: 'text-orange-700', border: 'border-orange-200', label: 'At Risk' },
+            'Severe': { bg: 'bg-rose-100/50', text: 'text-rose-700', border: 'border-rose-200', label: 'Critical' },
+            'Proliferative': { bg: 'bg-rose-100/50', text: 'text-rose-700', border: 'border-rose-200', label: 'Critical' }
+        };
+        const status = statusMap[diagnosis.class_name] || { bg: 'bg-slate-100', text: 'text-slate-500', border: 'border-slate-200', label: diagnosis.class_name };
+        return `<span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold border ${status.bg} ${status.text} ${status.border}">${status.label}</span>`;
+    }
+
+    // Filter Logic
+    function applyFilters() {
+        const searchTerm = universalSearchInput.value.toLowerCase();
+        const statusFilter = filterStatusSelect.value;
+        const fromDate = filterFromDateInput.value;
+        const toDate = filterToDateInput.value;
+
+        const filtered = patientsData.filter(patient => {
+            let searchMatch = true;
+            if (searchTerm) {
+                const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase();
+                const medicalId = (patient.medical_id || '').toLowerCase();
+                const email = (patient.email || '').toLowerCase();
+                const phone = (patient.phone || '').toLowerCase();
+                searchMatch = fullName.includes(searchTerm) || medicalId.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm);
+            }
+
+            let statusMatch = true;
+            if (statusFilter && statusFilter !== "") {
+                const latest = patient.diagnoses && patient.diagnoses.length > 0 ? patient.diagnoses[0] : null;
+                if (statusFilter === 'healthy') statusMatch = latest && latest.class_name === 'No DR';
+                else if (statusFilter === 'at_risk') statusMatch = latest && ['Mild', 'Moderate'].includes(latest.class_name);
+                else if (statusFilter === 'critical') statusMatch = latest && ['Severe', 'Proliferative'].includes(latest.class_name);
+                else if (statusFilter === 'new') statusMatch = !latest;
+                else {
+                    const statusLabel = statusFilter.replace(/_/g, ' ').toLowerCase();
+                    const badgeLabel = getStatusBadge(latest).match(/>([^<]+)</)[1];
+                    if (badgeLabel) statusMatch = badgeLabel.toLowerCase() === statusLabel;
+                }
+            }
+
+            let dateMatch = true;
+            if (fromDate || toDate) {
+                const patientDate = new Date(patient.created_at);
+                const from = fromDate ? new Date(fromDate) : new Date('1900-01-01');
+                const to = toDate ? new Date(toDate) : new Date('2099-12-31');
+                dateMatch = patientDate >= from && patientDate <= to;
+            }
+
+            return searchMatch && statusMatch && dateMatch;
+        });
+
+        renderPatients(filtered);
+        updateActiveFiltersCount();
+    }
+
+    // Event Listeners
+    clearFiltersBtn.addEventListener('click', () => {
+        universalSearchInput.value = '';
+        filterStatusSelect.value = '';
+        filterFromDateInput.value = '';
+        filterToDateInput.value = '';
+        renderPatients(patientsData);
+        updateActiveFiltersCount();
+    });
+
+    let searchTimeout;
+    universalSearchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(applyFilters, 300);
+    });
+
+    filterStatusSelect.addEventListener('change', applyFilters);
+    filterFromDateInput.addEventListener('change', applyFilters);
+    filterToDateInput.addEventListener('change', applyFilters);
+
+    // Modal Logic
+    function viewPatientDetails(patientId) {
+        const patient = patientsData.find(p => p.id === parseInt(patientId));
+        if (!patient) return;
+
+        const groupedDiagnoses = {};
+        patient.diagnoses.forEach(d => {
+            const sessionId = d.batch_session_id || `individual_${d.id}`;
+            const dateKey = new Date(d.created_at).toLocaleDateString('en-US', { 
+                month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+            });
+            if (!groupedDiagnoses[sessionId]) {
+                groupedDiagnoses[sessionId] = {
+                    date: dateKey,
+                    classes: new Set(),
+                    isBatch: d.batch_session_id !== null && d.batch_session_id !== undefined,
+                    batchSessionId: d.batch_session_id
+                };
+            }
+            groupedDiagnoses[sessionId].classes.add(d.class_name);
+        });
+
+        let html = `
+        <div class="space-y-8 font-sans">
+            <div class="flex items-center space-x-6">
+                <div class="h-20 w-20 rounded bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white font-bold text-2xl shadow-xl border-4 border-white/50">
+                    ${patient.first_name[0]}${patient.last_name[0]}
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">${patient.first_name} ${patient.last_name}</h3>
+                    <p class="text-slate-500 font-medium">${patient.email || 'No email'}</p>
+                    <div class="flex items-center mt-3 space-x-2">
+                        <span class="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs rounded font-bold uppercase tracking-wider border border-indigo-100">ID: ${patient.medical_id || 'N/A'}</span>
+                        <span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded font-bold uppercase tracking-wider border border-slate-200">${patient.gender || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div class="p-6 bg-slate-50/80 backdrop-blur-sm rounded border border-slate-100">
+                    <p class="text-xs text-slate-400 font-bold uppercase mb-2">Phone Number</p>
+                    <p class="text-slate-900 font-bold text-lg">${patient.phone || 'N/A'}</p>
+                </div>
+                <div class="p-6 bg-slate-50/80 backdrop-blur-sm rounded border border-slate-100">
+                    <p class="text-xs text-slate-400 font-bold uppercase mb-2">Patient Age</p>
+                    <p class="text-slate-900 font-bold text-lg">
+                        ${patient.age ? patient.age + ' years' : 'N/A'}
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-bold text-slate-900 text-lg">Diagnosis History</h4>
+                    <button onclick="downloadBatchHistoryReport('${patient.id}')" 
+                            class="flex items-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold transition-all shadow-md hover:shadow-lg">
+                        Download Report
+                    </button>
+                </div>
+                <div class="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    ${Object.keys(groupedDiagnoses).length > 0 ? (() => {
+                        let html = '';
+                        Object.values(groupedDiagnoses).forEach((group) => {
+                            const classesStr = Array.from(group.classes).join(', ');
+                            html += `
+                                <div class="bg-white/80 border border-slate-200 rounded p-5 shadow-sm hover:shadow-md transition-all">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <div class="text-sm text-slate-400 font-bold">${group.date}</div>
+                                        ${group.isBatch ? `
+                                            <button onclick="downloadBatchSessionReport('${patient.id}', '${group.batchSessionId}')" 
+                                                    class="text-indigo-600 hover:text-indigo-700 text-xs font-bold uppercase tracking-wider flex items-center bg-indigo-50 px-2 py-1 rounded">
+                                                <span>Session Report</span>
+                                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                            </button>
+                                            ` : ''}
+                                    </div>
+                                    <div class="text-slate-900 font-semibold">${classesStr}</div>
+                                </div>
+                            `;
+                        });
+                        return html;
+                    })() : '<div class="text-center py-8 bg-slate-50/50 rounded text-slate-400 text-sm font-medium border border-dashed border-slate-300">No diagnoses recorded yet.</div>'}
+                </div>
+            </div>
+        </div>
+        `;
+
+        document.getElementById('modalContent').innerHTML = html;
+        document.getElementById('patientModal').classList.remove('hidden');
+    }
+
+    function closePatientModal() {
+        document.getElementById('patientModal').classList.add('hidden');
+    }
+
+    document.getElementById('patientModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('patientModal')) closePatientModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        populateStatusDropdown();
+        applyURLParams();
+    });
+
+    function downloadBatchHistoryReport(patientId) {
+        fetch('{{ url_for("report.download_batch_history_report") }}', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patient_id: parseInt(patientId), report_type: 'pdf' })
+        })
+        .then(res => !res.ok ? res.json().then(data => Promise.reject(data.error)) : res.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `patient_batch_history_${patientId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(err => alert('Error: ' + err));
+    }
+
+    function downloadBatchSessionReport(patientId, batchSessionId) {
+        fetch('{{ url_for("report.download_batch_session_report") }}', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patient_id: parseInt(patientId), batch_session_id: batchSessionId, report_type: 'pdf' })
+        })
+        .then(res => !res.ok ? res.json().then(data => Promise.reject(data.error)) : res.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `batch_report_${batchSessionId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(err => alert('Error: ' + err));
+    }
+</script>
+{% endblock %}

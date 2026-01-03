@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Diabetic Retinopathy Detection{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center">
+    <div class="text-center max-w-2xl">
+        <div class="mb-8">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-6">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <h1 class="text-5xl font-bold text-gray-800 mb-4">DR Detection System</h1>
+            <p class="text-xl text-gray-600 mb-2">Medical AI Screening Tool for Diabetic Retinopathy</p>
+            <p class="text-gray-500">Advanced machine learning for early diagnosis and patient management</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-12">
+            <div class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-blue-600">
+                <svg class="w-12 h-12 text-blue-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">AI-Powered</h3>
+                <p class="text-gray-600 text-sm">Deep learning model trained on thousands of fundus images</p>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-green-600">
+                <svg class="w-12 h-12 text-green-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Professional Reports</h3>
+                <p class="text-gray-600 text-sm">Generate PDF reports with detailed diagnosis information</p>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-purple-600">
+                <svg class="w-12 h-12 text-purple-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Secure & HIPAA Ready</h3>
+                <p class="text-gray-600 text-sm">User authentication and patient data protection</p>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-xl p-8 text-white mb-8">
+            <h2 class="text-2xl font-bold mb-4">Get Started Today</h2>
+            <p class="mb-6 text-blue-100">Create an account to start screening patients for diabetic retinopathy</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ url_for('auth.signup') }}" class="px-8 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition">Sign Up</a>
+                <a href="{{ url_for('auth.login') }}" class="px-8 py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:bg-opacity-10 transition">Sign In</a>
+            </div>
+        </div>
+        
+        <div class="bg-blue-50 rounded-lg p-6 text-left">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Key Features</h3>
+            <ul class="space-y-2 text-gray-700">
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Patient record management with detailed medical history</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Single and batch image processing for high throughput</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Professional PDF reports with severity classification</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Comprehensive diagnosis history and patient tracking</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Database storage of all patient data and diagnoses</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

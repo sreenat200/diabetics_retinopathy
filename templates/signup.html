@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - RetinaAI{% endblock %}
+
+{% block layout %}
+<div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <div class="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+        <!-- Left Side: Branding & Info -->
+        <div class="md:w-1/2 bg-blue-600 p-12 text-white flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10">
+                <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path d="M0 100 C 20 0 50 0 100 100 Z" fill="white" />
+                </svg>
+            </div>
+
+            <div class="relative z-10">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                            </path>
+                        </svg>
+                    </div>
+                    <span class="text-2xl font-bold">RetinaAI</span>
+                </div>
+                <h2 class="text-3xl font-bold mb-4">Join Our Medical Community</h2>
+                <p class="text-blue-100 leading-relaxed">Create an account to start screening patients with our advanced
+                    AI technology. Join thousands of medical professionals.</p>
+            </div>
+
+            <div class="relative z-10 mt-12">
+                <div class="flex items-center space-x-2 text-sm text-blue-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Secure & Confidential</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Signup Form -->
+        <div class="md:w-1/2 p-12 bg-white">
+            <div class="text-center md:text-left mb-8">
+                <h3 class="text-2xl font-bold text-slate-900">Create Account</h3>
+                <p class="text-slate-500 mt-2">Get started with your free account</p>
+            </div>
+
+            <form id="signupForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">First Name</label>
+                        <input type="text" id="first_name" name="first_name"
+                            class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800 placeholder-slate-400"
+                            placeholder="First name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Last Name</label>
+                        <input type="text" id="last_name" name="last_name"
+                            class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800 placeholder-slate-400"
+                            placeholder="Last name">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
+                    <input type="email" id="email" name="email" required
+                        class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800 placeholder-slate-400"
+                        placeholder="doctor@hospital.com">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Designation <span class="text-red-600">*</span></label>
+                    <select id="designation" name="designation" required
+                        class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800">
+                        <option value="" selected>Select your designation</option>
+                        <option value="Doctor">Doctor</option>
+                        <option value="Lab Technician">Lab Technician</option>
+                        <option value="Nurse">Nurse</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div id="customDesignationContainer" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Enter Your Designation <span class="text-red-600">*</span></label>
+                    <input type="text" id="custom_designation" name="custom_designation"
+                        class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800 placeholder-slate-400"
+                        placeholder="e.g., Ophthalmologist, Optometrist">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Hospital Name <span class="text-slate-400 text-xs">(Optional)</span></label>
+                    <input type="text" id="hospital_name" name="hospital_name"
+                        class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800 placeholder-slate-400"
+                        placeholder="City Hospital">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Password</label>
+                    <input type="password" id="password" name="password" required
+                        class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800 placeholder-slate-400"
+                        placeholder="Create a strong password">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required
+                        class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-slate-800 placeholder-slate-400"
+                        placeholder="Confirm your password">
+                </div>
+
+                <div id="errorMessage"
+                    class="hidden p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg text-sm"></div>
+
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform active:scale-[0.98] shadow-lg shadow-blue-600/20 mt-2">
+                    Create Account
+                </button>
+
+                <p class="text-center text-slate-500 text-sm mt-6">
+                    Already have an account?
+                    <a href="{{ url_for('auth.login') }}" class="text-blue-600 hover:text-blue-700 font-bold">Sign in</a>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Handle dynamic designation field
+    const designationSelect = document.getElementById('designation');
+    const customDesignationContainer = document.getElementById('customDesignationContainer');
+    const customDesignationInput = document.getElementById('custom_designation');
+
+    if (designationSelect) {
+        designationSelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                customDesignationContainer.classList.remove('hidden');
+                customDesignationInput.required = true;
+            } else {
+                customDesignationContainer.classList.add('hidden');
+                customDesignationInput.required = false;
+                customDesignationInput.value = '';
+            }
+        });
+    }
+
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirm_password = document.getElementById('confirm_password').value;
+        const first_name = document.getElementById('first_name').value;
+        const last_name = document.getElementById('last_name').value;
+        const designation = document.getElementById('designation').value;
+        const custom_designation = document.getElementById('custom_designation').value;
+        const hospital_name = document.getElementById('hospital_name').value;
+        const errorDiv = document.getElementById('errorMessage');
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+
+        // Validation: Check designation is selected
+        if (!designation) {
+            errorDiv.textContent = 'Please select a designation';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+
+        // Validation: Check custom designation if "Other" is selected
+        if (designation === 'Other' && !custom_designation.trim()) {
+            errorDiv.textContent = 'Please enter your designation';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+
+        // Loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Creating Account...';
+
+        try {
+            const response = await fetch('/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    confirm_password,
+                    first_name,
+                    last_name,
+                    designation,
+                    custom_designation: designation === 'Other' ? custom_designation : '',
+                    hospital_name
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                window.location.href = data.redirect;
+            } else {
+                errorDiv.textContent = data.error || 'Sign up failed';
+                errorDiv.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        } catch (error) {
+            errorDiv.textContent = 'An error occurred. Please try again.';
+            errorDiv.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Account';
+        }
+    });
+</script>
+{% endblock %}

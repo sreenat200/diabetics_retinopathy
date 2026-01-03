@@ -1,0 +1,1581 @@
+{% extends "base.html" %}
+
+{% block title %}Image Analysis - Diabetic Retinopathy Detection{% endblock %}
+
+{% block styles %}
+<style>
+    @keyframes shimmer {
+        0% {
+            background-position: -1000px 0;
+        }
+        100% {
+            background-position: 1000px 0;
+        }
+    }
+    
+    #progressBar {
+        background: linear-gradient(90deg, #9333ea 0%, #ec4899 50%, #9333ea 100%);
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite linear;
+    }
+    
+    /* Universal Search Styles */
+    .search-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+    }
+    
+    #patientSearchInput {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 15px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+    
+    #patientSearchInput:focus {
+        border-color: #9333ea;
+        box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+    }
+    
+    #searchDropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 320px;
+        overflow-y: auto;
+        z-index: 50;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: none;
+    }
+    
+    #searchDropdown.active {
+        display: block;
+    }
+    
+    .search-result-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .search-result-item:hover {
+        background-color: #f9fafb;
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .search-result-name {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    
+    .search-result-meta {
+        font-size: 12px;
+        color: #6b7280;
+    }
+    
+    .search-result-meta span {
+        display: inline-block;
+        margin-right: 12px;
+    }
+    
+    .no-results {
+        padding: 16px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 13px;
+    }
+    
+    .selected-patient-info {
+        margin-top: 12px;
+        padding: 12px;
+        background-color: #f0fdf4;
+        border-left: 4px solid #22c55e;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #16a34a;
+        display: none;
+    }
+    
+    .selected-patient-info.active {
+        display: block;
+    }
+    
+    .form-section-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    /* AI Suggestions Styles */
+    .ai-suggestion-card {
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    
+    .ai-suggestion-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .treatment-step {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    
+    .treatment-step::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #10b981;
+        font-weight: bold;
+    }
+    
+    .warning-item {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    
+    .warning-item::before {
+        content: "⚠️";
+        position: absolute;
+        left: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">Patient Analysis</h1>
+        <p class="text-gray-600 text-lg">Analyze retinal images and generate medical reports</p>
+    </div>
+    
+    <div class="flex gap-3">
+        <!-- Add this button next to the Register Patient button -->
+        <a href="{{ url_for('main.settings') }}#ai-models"
+            class="flex items-center px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-all shadow-lg shadow-purple-600/20 active:scale-95 w-fit">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            AI Setup
+        </a>
+        
+        <a href="{{ url_for('main.register_patient') }}"
+            class="flex items-center px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-all shadow-lg shadow-green-600/20 active:scale-95 w-fit">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Register Patient
+        </a>
+        
+        <a href="{{ url_for('main.dr_onetime_analyse') }}"
+            class="flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-all shadow-lg shadow-blue-600/20 active:scale-95 w-fit">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            One-Time Analyse
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-1 gap-8">
+    <!-- Patient Details & Upload Form -->
+    <div class="lg:col-span-1">
+        <!-- Form Section (No Card Background) -->
+            <form id="analysisForm" class="space-y-8">
+                <!-- Universal Patient Search -->
+                <div id="patientSearchSection" class="mb-8">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Search Patient <span class="text-red-600">*</span></label>
+                    <div class="search-container">
+                        <input 
+                            type="text" 
+                            id="patientSearchInput" 
+                            placeholder="Search by Patient ID, Name, or Phone..." 
+                            class="w-full px-4 py-3 border-2 border-gray-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition text-sm"
+                            autocomplete="off">
+                        <div id="searchDropdown" class="search-dropdown"></div>
+                        <div id="selectedPatientInfo" class="selected-patient-info">
+                            <p id="selectedPatientName" class="font-semibold"></p>
+                            <p id="selectedPatientDetails" class="text-xs mt-1"></p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Type a Patient ID, name, or phone number to search</p>
+                </div>
+
+                <!-- Hidden inputs to store selected patient data -->
+                <input type="hidden" id="selectedPatientId" name="patient_id">
+                <input type="hidden" name="first_name" id="hiddenFirstName">
+                <input type="hidden" name="last_name" id="hiddenLastName">
+                <input type="hidden" name="medical_id" id="hiddenMedicalId">
+                <input type="hidden" name="gender" id="hiddenGender">
+                <input type="hidden" name="email" id="hiddenEmail">
+                <input type="hidden" name="phone" id="hiddenPhone">
+                <input type="hidden" name="notes" id="hiddenNotes">
+
+                <!-- Image Upload Section -->
+                <div id="retinalImagesSection" class="form-section-disabled">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4V5h12v10z" clip-rule="evenodd"></path>
+                        </svg>
+                        Retinal Images
+                    </h3>
+                    <div class="flex items-center gap-6 mb-3">
+                        <label class="inline-block">
+                            <input 
+                                type="file" 
+                                id="imageFile" 
+                                name="files" 
+                                accept="image/*" 
+                                class="hidden" 
+                                multiple>
+                            <span class="inline-block px-6 py-3 bg-transparent border-2 border-slate-400 text-slate-900 font-bold text-sm cursor-pointer transition transform hover:scale-105 hover:bg-slate-50">📁 Browse</span>
+                        </label>
+                        <span id="fileCount" class="text-gray-600 text-xs font-medium ml-2">No files selected</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-3">📋 JPG, PNG, BMP, TIFF (Max 50MB)</p>
+                    
+                    <!-- File List -->
+                    <div id="fileListContainer" class="hidden p-2 border-2 border-blue-200 mb-2 max-w-xs">
+                        <h4 class="text-xs font-bold text-gray-700 mb-1">Files</h4>
+                        <ul id="fileList" class="space-y-0.5"></ul>
+                    </div>
+                    
+                    <!-- Preview Gallery -->
+                    <div id="previewContainer" class="hidden">
+                        <h4 class="text-xs font-bold text-gray-700 mb-2">Preview</h4>
+                        <div id="previewGallery" class="grid grid-cols-2 gap-2 max-w-xs"></div>
+                    </div>
+                </div>
+
+                <!-- Clinical Observations Section -->
+                <div id="clinicalObservationsSection" class="max-w-2xl form-section-disabled">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Clinical Observations</label>
+                    <textarea name="diagnosis_notes" rows="3" class="w-full px-3 py-2 border-2 border-gray-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition text-sm" placeholder="Additional diagnostic observations..."></textarea>
+                </div>
+
+                <!-- Analyze Button (Initially Disabled) -->
+                <button id="analyzeBtn" type="submit" disabled class="px-6 py-2 bg-slate-300 text-slate-600 font-bold text-sm cursor-not-allowed transition transform mt-4 w-fit" title="Please select a patient first">
+                    🚀 Analyze
+                </button>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden p-4 bg-red-100 border-2 border-red-300 text-red-700 font-medium"></div>
+                <div id="processingProgress" class="hidden mt-6 p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="font-bold text-purple-900 text-lg">⚙️ Processing...</p>
+                        <p id="progressPercent" class="text-sm font-bold text-purple-600">0%</p>
+                    </div>
+                    <div class="w-full bg-purple-200 h-3 mb-4 overflow-hidden border border-purple-300">
+                        <div id="progressBar" class="h-3 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div id="progressSteps" class="space-y-3 text-sm text-purple-900">
+                        <div class="flex items-center gap-2">
+                            <span id="step1-icon" class="inline-flex items-center justify-center w-6 h-6 bg-purple-200 text-xs font-bold text-purple-700">1</span>
+                            <span id="step1-text">Validating image...</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="step2-icon" class="inline-flex items-center justify-center w-6 h-6 bg-purple-200 text-xs font-bold text-purple-700">2</span>
+                            <span id="step2-text">Processing retinal scan...</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="step3-icon" class="inline-flex items-center justify-center w-6 h-6 bg-purple-200 text-xs font-bold text-purple-700">3</span>
+                            <span id="step3-text">Running AI analysis...</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="step4-icon" class="inline-flex items-center justify-center w-6 h-6 bg-purple-200 text-xs font-bold text-purple-700">4</span>
+                            <span id="step4-text">Saving diagnosis...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Display Area -->
+                
+
+                </div>
+
+                </div>
+</div>
+
+<!-- Results Section -->
+<div>
+    <div id="resultsSection" class="hidden sticky top-24">
+        <div id="resultContent" class="mb-6"></div>
+    </div>
+    
+    <!-- Inline Results -->
+    <div id="inlineResults" class="hidden mt-8 mb-12">
+        <!-- Tab Navigation -->
+        <div class="flex border-b-2 border-slate-300 mb-6 bg-white overflow-x-auto">
+            <button class="tabBtn active px-6 py-3 font-bold text-gray-800 border-b-2 border-purple-600 cursor-pointer hover:bg-slate-50 transition whitespace-nowrap" data-tab="resultsTab">
+                📊 Results Summary
+            </button>
+        </div>
+
+        <!-- Tab Content: Results Summary -->
+        <div id="resultsTab" class="tabContent">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center pb-4 border-b-2 border-slate-300">
+                <svg class="w-8 h-8 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                Results Summary
+            </h2>
+            
+            <!-- Patient Information Display (inside Results Summary) -->
+            <div id="nonEditablePatientInfo" class="hidden mb-6 p-4 border-2 border-blue-200">
+                <h3 class="text-sm font-bold text-blue-900 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path>
+                    </svg>
+                    Patient Information
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <p class="font-semibold text-slate-600 uppercase">First Name</p>
+                        <p id="displayFirstName" class="text-slate-800 font-medium mt-1">-</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-600 uppercase">Last Name</p>
+                        <p id="displayLastName" class="text-slate-800 font-medium mt-1">-</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-600 uppercase">Age</p>
+                        <p id="displayAge" class="text-slate-800 font-medium mt-1">-</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-600 uppercase">Gender</p>
+                        <p id="displayGender" class="text-slate-800 font-medium mt-1">-</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-600 uppercase">Email</p>
+                        <p id="displayEmail" class="text-slate-800 font-medium mt-1">-</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-600 uppercase">Phone</p>
+                        <p id="displayPhone" class="text-slate-800 font-medium mt-1">-</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Content -->
+            <div id="inlineResultsContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading State -->
+<div id="loadingSection" class="hidden mt-6 sticky top-24">
+    <div class="flex flex-col items-center justify-center">
+        <div class="animate-spin h-16 w-16 border-4 border-purple-200 border-t-purple-600 mb-4"></div>
+        <p class="text-gray-600 text-center font-medium">🔍 Processing image analysis...</p>
+    </div>
+</div>
+
+<!-- Final Conclusion Section -->
+<div id="conclusionSection" class="hidden mt-12 mb-20 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+        <svg class="w-8 h-8 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2z" clip-rule="evenodd"></path>
+        </svg>
+        Final Conclusion
+    </h2>
+    <p id="conclusionText" class="text-gray-700 text-lg leading-relaxed font-medium"></p>
+</div>
+
+<div id="aiSuggestionsSection" class="hidden mt-12 mb-20">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        
+        <div class="flex flex-col md:flex-row items-center justify-start gap-6 p-6 border-b border-slate-100 bg-slate-50/50">
+            
+            <h2 class="text-xl font-bold text-slate-800 flex items-center tracking-tight shrink-0">
+                <div class="p-2 bg-indigo-100 rounded-lg mr-3">
+                    <svg class="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M13 10V3L4 14h7v7l9-11h-7z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                AI Suggestions
+            </h2>
+            
+            <div class="relative group w-full md:w-64">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                </div>
+
+                <select id="aiModelSelect" class="appearance-none w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 hover:border-indigo-300 transition-all shadow-sm cursor-pointer">
+                    <option value="">Loading models...</option>
+                </select>
+
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+
+            <button id="generateAiSummaryBtn" class="group relative inline-flex items-center justify-center px-6 py-2.5 font-semibold text-white transition-all duration-200 bg-slate-900 rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 w-full md:w-auto ml-auto md:ml-0">
+                <div class="absolute -inset-3 transition-all duration-1000 opacity-70 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur-lg group-hover:opacity-100 group-hover:-inset-4 animate-tilt rounded-xl -z-10"></div>
+                <span class="relative flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Generate Summary</span>
+                </span>
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div id="aiSuggestionsContent" class="hidden space-y-6"></div>
+
+            <div id="aiLoadingSection" class="hidden py-12 text-center">
+                <div class="relative w-16 h-16 mx-auto mb-4">
+                    <div class="absolute inset-0 rounded-full border-4 border-indigo-100"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin"></div>
+                </div>
+                <h3 class="text-slate-800 font-semibold text-lg">Analyzing Data...</h3>
+                <p class="text-slate-500 text-sm mt-1">Our AI is generating treatment suggestions.</p>
+            </div>
+
+            <div id="aiErrorSection" class="hidden p-4 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-lg flex items-center gap-3">
+                 <span id="aiErrorMessage"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Current diagnosis data for PDF download
+let currentDiagnosis = null;
+let currentPatientId = null;
+let currentDiagnosisIds = [];  // Store all diagnosis IDs from batch
+
+// File input and preview
+const imageFile = document.getElementById('imageFile');
+const previewContainer = document.getElementById('previewContainer');
+const previewGallery = document.getElementById('previewGallery');
+const fileCount = document.getElementById('fileCount');
+const fileListContainer = document.getElementById('fileListContainer');
+const fileList = document.getElementById('fileList');
+const errorDiv = document.getElementById('errorMessage');
+const processingProgress = document.getElementById('processingProgress');
+const progressBar = document.getElementById('progressBar');
+const progressPercent = document.getElementById('progressPercent');
+const resultsSection = document.getElementById('resultsSection');
+const loadingSection = document.getElementById('loadingSection');
+const clinicalObservationsSection = document.getElementById('clinicalObservationsSection');
+const retinalImagesSection = document.getElementById('retinalImagesSection');
+const analysisForm = document.getElementById('analysisForm');
+
+// Universal Patient Search Elements
+const patientSearchInput = document.getElementById('patientSearchInput');
+const searchDropdown = document.getElementById('searchDropdown');
+const selectedPatientInfo = document.getElementById('selectedPatientInfo');
+const selectedPatientName = document.getElementById('selectedPatientName');
+const selectedPatientDetails = document.getElementById('selectedPatientDetails');
+const analyzeBtn = document.getElementById('analyzeBtn');
+
+let selectedPatient = null;
+let searchTimeout = null;
+
+// Debounced search function
+function performSearch(query) {
+    if (!query || query.length < 1) {
+        searchDropdown.classList.remove('active');
+        return;
+    }
+    
+    fetch(`/search-patients?q=${encodeURIComponent(query)}&limit=6`)
+        .then(response => response.json())
+        .then(data => {
+            displaySearchResults(data.results);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            searchDropdown.innerHTML = '<div class="no-results">Error searching patients</div>';
+            searchDropdown.classList.add('active');
+        });
+}
+
+// Display search results
+function displaySearchResults(results) {
+    if (results.length === 0) {
+        searchDropdown.innerHTML = '<div class="no-results">No patients found</div>';
+        searchDropdown.classList.add('active');
+        return;
+    }
+    
+    let html = '';
+    results.forEach((patient, index) => {
+        const fullName = `${patient.first_name} ${patient.last_name}`.trim();
+        html += `
+            <div class="search-result-item" data-index="${index}" data-patient-id="${patient.id}">
+                <div class="search-result-name">${fullName || 'Unknown'}</div>
+                <div class="search-result-meta">
+                    ${patient.medical_id ? `<span>🆔 ID: ${patient.medical_id}</span>` : ''}
+                    ${patient.phone ? `<span>📱 ${patient.phone}</span>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    searchDropdown.innerHTML = html;
+    searchDropdown.classList.add('active');
+    
+    // Add click handlers
+    document.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const index = parseInt(item.dataset.index);
+            selectPatient(results[index]);
+        });
+    });
+}
+
+// Select patient and populate form
+function selectPatient(patient) {
+    selectedPatient = patient;
+    
+    // Update hidden inputs
+    document.getElementById('selectedPatientId').value = patient.id;
+    document.getElementById('hiddenFirstName').value = patient.first_name || '';
+    document.getElementById('hiddenLastName').value = patient.last_name || '';
+    document.getElementById('hiddenMedicalId').value = patient.medical_id || '';
+    document.getElementById('hiddenGender').value = patient.gender || '';
+    document.getElementById('hiddenEmail').value = patient.email || '';
+    document.getElementById('hiddenPhone').value = patient.phone || '';
+    document.getElementById('hiddenNotes').value = patient.notes || '';
+    
+    // Update search input and close dropdown
+    const fullName = `${patient.first_name} ${patient.last_name}`.trim();
+    patientSearchInput.value = `${fullName} (ID: ${patient.medical_id})`;
+    searchDropdown.classList.remove('active');
+    
+    // Show selected patient info
+    selectedPatientName.textContent = fullName || 'Selected Patient';
+    selectedPatientDetails.textContent = `ID: ${patient.medical_id || 'N/A'} • Phone: ${patient.phone || 'N/A'}`;
+    selectedPatientInfo.classList.add('active');
+    
+    // Enable image upload and analysis sections
+    retinalImagesSection.classList.remove('form-section-disabled');
+    clinicalObservationsSection.classList.remove('form-section-disabled');
+    
+    // Enable analyze button
+    analyzeBtn.disabled = false;
+    analyzeBtn.classList.remove('cursor-not-allowed');
+    analyzeBtn.classList.add('bg-slate-900', 'hover:bg-slate-800', 'text-white', 'cursor-pointer');
+    analyzeBtn.classList.remove('bg-slate-300', 'text-slate-600');
+    analyzeBtn.title = 'Click to analyze retinal images';
+    
+    console.log('[SEARCH] Patient selected:', patient);
+}
+
+// Search input listener
+patientSearchInput.addEventListener('input', (e) => {
+    const query = e.target.value;
+    
+    // Clear previous timeout
+    clearTimeout(searchTimeout);
+    
+    // If input is empty, close dropdown and reset
+    if (!query.trim()) {
+        searchDropdown.classList.remove('active');
+        selectedPatient = null;
+        return;
+    }
+    
+    // Debounce search
+    searchTimeout = setTimeout(() => {
+        performSearch(query);
+    }, 300);
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-container')) {
+        searchDropdown.classList.remove('active');
+    }
+});
+
+// Focus on input to show search results again
+patientSearchInput.addEventListener('focus', (e) => {
+    if (e.target.value.trim() && searchDropdown.innerHTML) {
+        searchDropdown.classList.add('active');
+    }
+});
+
+// File selection and preview
+imageFile.addEventListener('change', () => {
+    const files = Array.from(imageFile.files);
+    
+    if (files.length === 0) {
+        fileCount.textContent = 'No files selected';
+        fileListContainer.classList.add('hidden');
+        previewContainer.classList.add('hidden');
+        return;
+    }
+    
+    // Update file count
+    fileCount.textContent = `${files.length} file${files.length !== 1 ? 's' : ''} selected`;
+    
+    // Show file list
+    fileList.innerHTML = '';
+    files.forEach((file, index) => {
+        const listItem = document.createElement('li');
+        listItem.className = 'flex items-center justify-between p-1 bg-gradient-to-r from-blue-50 to-purple-50 rounded border border-blue-200';
+        listItem.innerHTML = `
+            <div class="flex items-center gap-1 flex-1 min-w-0">
+                <span class="text-xs flex-shrink-0">📄</span>
+                <span class="text-xs font-medium text-gray-800 flex-shrink-0">F${index + 1}:</span>
+                <span class="text-xs text-gray-700 truncate">${file.name}</span>
+                <span class="text-xs text-gray-600 flex-shrink-0">${(file.size / 1024 / 1024).toFixed(2)}MB</span>
+            </div>
+            <button type="button" class="ml-1 px-1.5 py-0.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition flex-shrink-0" data-index="${index}">✕</button>
+        `;
+        fileList.appendChild(listItem);
+    });
+    fileListContainer.classList.remove('hidden');
+    
+    // Generate previews
+    previewGallery.innerHTML = '';
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'relative bg-gray-100 overflow-hidden border-2 border-gray-300';
+            previewDiv.innerHTML = `
+                <img src="${e.target.result}" class="w-full h-24 object-cover" alt="Preview">
+                <span class="absolute top-1 right-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 font-bold">✓</span>
+            `;
+            previewGallery.appendChild(previewDiv);
+        };
+        reader.readAsDataURL(file);
+    });
+    previewContainer.classList.remove('hidden');
+});
+
+// Remove file from selection
+fileList.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        const index = parseInt(e.target.dataset.index);
+        const dataTransfer = new DataTransfer();
+        const files = Array.from(imageFile.files);
+        files.splice(index, 1);
+        files.forEach(file => dataTransfer.items.add(file));
+        imageFile.files = dataTransfer.files;
+        
+        // Trigger change event
+        const event = new Event('change', { bubbles: true });
+        imageFile.dispatchEvent(event);
+    }
+});
+
+// Update progress indicator with step tracking
+function updateProgress(step, percent) {
+    for (let i = 1; i <= 4; i++) {
+        const icon = document.getElementById(`step${i}-icon`);
+        if (i < step) {
+            // Mark completed steps
+            icon.classList.add('bg-gradient-to-r', 'from-green-500', 'to-emerald-500', 'text-white');
+            icon.classList.remove('bg-purple-200', 'text-purple-700', 'bg-gradient-to-r', 'from-purple-500', 'to-pink-500');
+            icon.textContent = '✓';
+        } else if (i === step) {
+            // Mark current step
+            icon.classList.add('bg-gradient-to-r', 'from-purple-500', 'to-pink-500', 'text-white');
+            icon.classList.remove('bg-purple-200', 'text-purple-700', 'bg-gradient-to-r', 'from-green-500', 'to-emerald-500');
+            icon.textContent = i;
+        } else {
+            // Reset future steps
+            icon.classList.remove('bg-gradient-to-r', 'from-purple-500', 'to-pink-500', 'from-green-500', 'to-emerald-500', 'text-white');
+            icon.classList.add('bg-purple-200', 'text-purple-700');
+            icon.textContent = i;
+        }
+    }
+    progressBar.style.width = percent + '%';
+    progressPercent.textContent = percent + '%';
+}
+
+// Track which step we're on for accurate progress updates
+let currentStep = 1;
+
+// Function to display non-editable patient information
+function showNonEditablePatientInfo() {
+    const firstName = document.getElementById('hiddenFirstName').value || '-';
+    const lastName = document.getElementById('hiddenLastName').value || '-';
+    document.getElementById('displayFirstName').textContent = firstName;
+    document.getElementById('displayLastName').textContent = lastName;
+    // Display age directly instead of calculating from date of birth
+    const age = selectedPatient?.age || '-';
+    document.getElementById('displayAge').textContent = age !== '-' ? `${age} years` : '-';
+    const gender = document.getElementById('hiddenGender').value || '-';
+    const email = document.getElementById('hiddenEmail').value || '-';
+    const phone = document.getElementById('hiddenPhone').value || '-';
+    document.getElementById('displayGender').textContent = gender;
+    document.getElementById('displayEmail').textContent = email;
+    document.getElementById('displayPhone').textContent = phone;
+}
+
+// Event listeners for date picker
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize tab switching functionality
+    const tabButtons = document.querySelectorAll('.tabBtn');
+    const tabContents = document.querySelectorAll('.tabContent');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabName = button.dataset.tab;
+            
+            // Hide all tab contents
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active styling from all buttons
+            tabButtons.forEach(btn => {
+                btn.classList.remove('border-purple-600', 'text-gray-800');
+                btn.classList.add('border-transparent', 'text-gray-600');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.remove('hidden');
+            
+            // Add active styling to clicked button
+            button.classList.add('border-purple-600', 'text-gray-800');
+            button.classList.remove('border-transparent', 'text-gray-600');
+        });
+    });
+});
+
+// Display single result inline
+function displayInlineSingleResult(data) {
+    const inlineResultsContent = document.getElementById('inlineResultsContent');
+    const firstName = document.querySelector('input[name="first_name"]').value;
+    const lastName = document.querySelector('input[name="last_name"]').value;
+    // Display age directly instead of calculating from date of birth
+    const age = selectedPatient?.age || '-';
+    const gender = document.querySelector('select[name="gender"]').value;
+    const email = document.querySelector('input[name="email"]').value;
+    const phone = document.querySelector('input[name="phone"]').value;
+    const notes = document.querySelector('input[name="notes"]')?.value || '';
+    const clinicalNotes = document.querySelector('textarea[name="diagnosis_notes"]').value;
+    
+    // DR class severity colors
+    const drColors = {
+        'No DR': { color: 'emerald', severity: 'No Diabetic Retinopathy' },
+        'Mild': { color: 'amber', severity: 'Mild Non-Proliferative DR' },
+        'Moderate': { color: 'orange', severity: 'Moderate Non-Proliferative DR' },
+        'Severe': { color: 'red', severity: 'Severe Non-Proliferative DR' },
+        'Proliferative': { color: 'rose', severity: 'Proliferative DR' }
+    };
+    
+    const drInfo = drColors[data.class_name] || { color: 'slate', severity: 'Unknown' };
+    
+    let html = `
+        <div class="space-y-4">
+            <!-- Patient Information -->
+            <div class="p-4 rounded-lg border-l-4 border-blue-500">
+                <p class="text-xs font-bold text-blue-900 uppercase mb-2">👤 Patient Details</p>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div><span class="text-slate-600">Name:</span> <span class="font-semibold">${firstName} ${lastName}</span></div>
+                    <div><span class="text-slate-600">Age:</span> <span class="font-semibold">${age !== '-' ? `${age} years` : '-'}</span></div>
+                    <div><span class="text-slate-600">Gender:</span> <span class="font-semibold">${gender}</span></div>
+                    <div><span class="text-slate-600">Email:</span> <span class="font-semibold">${email}</span></div>
+                    <div class="col-span-2"><span class="text-slate-600">Phone:</span> <span class="font-semibold">${phone}</span></div>
+                </div>
+            </div>
+            
+            <!-- DR Classification -->
+            <div class="p-4 rounded-lg border-l-4 border-${drInfo.color}-500">
+                <p class="text-xs font-bold text-${drInfo.color}-900 uppercase mb-2">🔍 DR Classification</p>
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="px-4 py-2 text-sm font-bold text-white rounded-lg bg-${drInfo.color}-600">${data.class_name}</span>
+                    <span class="text-sm font-semibold text-${drInfo.color}-900">${data.confidence_percent.toFixed(1)}% Confidence</span>
+                </div>
+                <p class="text-xs text-${drInfo.color}-700">${drInfo.severity}</p>
+            </div>
+            
+            <!-- Explainability -->
+            <div class="p-4 rounded-lg border-l-4 border-purple-500">
+                <p class="text-xs font-bold text-purple-900 uppercase mb-2">🔬 Explainability</p>
+                <p class="text-xs text-purple-700">Grad-CAM based lesion region highlights</p>
+                <div class="w-full h-20 rounded mt-2 border border-purple-200 flex items-center justify-center">
+                    <p class="text-xs text-slate-500">Visualization placeholder</p>
+                </div>
+            </div>
+            
+            <!-- Screening Report -->
+            <div class="p-4 rounded-lg border-l-4 border-cyan-500">
+                <p class="text-xs font-bold text-cyan-900 uppercase mb-2">📋 Screening Report</p>
+                <div class="text-xs space-y-1 text-cyan-800">
+                    <p><span class="font-semibold">Clinical Findings:</span> ${clinicalNotes || 'No additional notes'}</p>
+                    <p><span class="font-semibold">Medical History:</span> ${notes || 'No history provided'}</p>
+                </div>
+            </div>
+            
+            <!-- Classification Scores -->
+            <div class="p-4 rounded-lg border-l-4 border-green-500">
+                <p class="text-xs font-bold text-green-900 uppercase mb-3">📊 Classification Scores</p>
+                <div class="space-y-2">
+    `;
+    
+    if (data.all_predictions) {
+        const sortedPreds = Object.entries(data.all_predictions).sort((a, b) => b[1] - a[1]);
+        sortedPreds.forEach(([cls, score]) => {
+            const percentage = (parseFloat(score) * 100);
+            html += `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-green-700 min-w-24">${cls}</span>
+                    <div class="flex-1 bg-green-200 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="text-xs font-bold text-green-700 min-w-12 text-right">${percentage.toFixed(1)}%</span>
+                </div>
+            `;
+        });
+    }
+    
+    html += `
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button type="button" id="inlineDownloadPdfBtn" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold text-sm transition transform hover:scale-105">
+                    📄 Download PDF
+                </button>
+                <button type="button" id="inlineNewAnalysisBtn" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold text-sm transition transform hover:scale-105">
+                    ↻ New Analysis
+                </button>
+            </div>
+        </div>
+    `;
+    
+    inlineResultsContent.innerHTML = html;
+    attachInlineButtonListeners();
+    
+    console.log('[DISPLAY] Detailed clinical report displayed with patient details');
+}
+
+// Display batch results inline
+function displayInlineBatchResults(data) {
+    const inlineResultsContent = document.getElementById('inlineResultsContent');
+    
+    // DO NOT deduplicate results - each image is unique even if predictions are identical
+    // The deduplication was causing valid different images to be removed
+    let resultsArray = data.results || [];
+    
+    // Calculate counts from actual results (no deduplication)
+    const successfulCount = resultsArray.filter(r => !r.error).length;
+    const failedCount = resultsArray.filter(r => r.error).length;
+    const totalCount = resultsArray.length;
+    
+    let html = `
+        <div class="space-y-4">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="p-3 rounded-lg border border-slate-200 text-center hover:shadow-md transition">
+                    <p class="text-2xl font-bold text-slate-900">${totalCount}</p>
+                    <p class="text-xs font-semibold text-slate-500 uppercase mt-1">Total</p>
+                </div>
+                <div class="p-3 rounded-lg border border-emerald-200 text-center hover:shadow-md transition">
+                    <p class="text-2xl font-bold text-emerald-600">${successfulCount}</p>
+                    <p class="text-xs font-semibold text-emerald-600 uppercase mt-1">Analyzed</p>
+                </div>
+                <div class="p-3 rounded-lg border border-rose-200 text-center hover:shadow-md transition">
+                    <p class="text-2xl font-bold text-rose-600">${failedCount}</p>
+                    <p class="text-xs font-semibold text-rose-600 uppercase mt-1">Failed</p>
+                </div>
+            </div>
+            
+            <!-- Results List -->
+            <div>
+                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Image Analysis</p>
+                <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
+    `;
+    
+    if (resultsArray) {
+        resultsArray.forEach((result, idx) => {
+            if (result.error) {
+                html += `
+                    <div class="p-3 rounded-lg border-l-4 border-rose-500 flex justify-between items-center hover:shadow-md transition">
+                        <div>
+                            <p class="font-semibold text-slate-900 text-sm">Image ${idx + 1}</p>
+                            <p class="text-xs text-rose-600 mt-0.5">❌ ${result.error}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const colors = {
+                    'No DR': 'emerald',
+                    'Mild': 'amber',
+                    'Moderate': 'orange',
+                    'Severe': 'red',
+                    'Proliferative': 'rose'
+                };
+                const color = colors[result.class_name] || 'slate';
+                const expandId = `expand-${idx}`;
+                html += `
+                    <div class="p-3 rounded-lg border-l-4 border-${color}-500 hover:shadow-md transition">
+                        <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('${expandId}').classList.toggle('hidden')">
+                            <div>
+                                <p class="font-semibold text-slate-900 text-sm">Image ${idx + 1}</p>
+                                <p class="text-xs text-slate-600 mt-0.5">📊 ${result.class_name} • ${result.confidence_percent.toFixed(1)}%</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 text-xs font-bold text-white rounded-full bg-${color}-500 flex-shrink-0">${result.class_name}</span>
+                                <span class="text-xs text-slate-500">▼</span>
+                            </div>
+                        </div>
+                        <!-- Expandable predicted classes -->
+                        <div id="${expandId}" class="hidden mt-3 pt-3 border-t border-slate-200">
+                            <p class="text-xs font-semibold text-slate-600 uppercase mb-2">All Predictions</p>
+                            <div class="space-y-1.5">
+                `;
+                
+                if (result.all_predictions) {
+                    Object.entries(result.all_predictions)
+                        .sort((a, b) => b[1] - a[1])
+                        .forEach(([cls, score], pidx) => {
+                            const percentage = (parseFloat(score) * 100);
+                            const predColors = ['from-purple-500 to-pink-500', 'from-blue-500 to-cyan-500', 'from-green-500 to-emerald-500', 'from-yellow-500 to-orange-500', 'from-red-500 to-rose-500'];
+                            const colorClass = predColors[pidx % predColors.length];
+                            html += `
+                                <div class="flex items-center gap-2 p-2 rounded-lg border border-slate-200">
+                                    <span class="text-xs font-medium text-slate-700 min-w-20">${cls}</span>
+                                    <div class="flex-1 bg-slate-200 rounded-full h-1">
+                                        <div class="bg-gradient-to-r ${colorClass} h-1 rounded-full" style="width: ${percentage}%"></div>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-600 min-w-10 text-right">${percentage.toFixed(0)}%</span>
+                                </div>
+                            `;
+                        });
+                }
+                
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    }
+    
+    html += `
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-2">
+                <button type="button" id="inlineDownloadPdfBtn" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold text-sm transition transform hover:scale-105">
+                    📄 Download PDF
+                </button>
+                <button type="button" id="inlineNewAnalysisBtn" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold text-sm transition transform hover:scale-105">
+                    ↻ New Analysis
+                </button>
+            </div>
+        </div>
+    `;
+    
+    inlineResultsContent.innerHTML = html;
+    attachInlineButtonListeners();
+    
+    console.log('[DISPLAY] Batch results inline displayed with NO deduplication');
+}
+
+// Attach event listeners to inline buttons
+function attachInlineButtonListeners() {
+    const inlineDownloadBtn = document.getElementById('inlineDownloadPdfBtn');
+    const inlineNewAnalysisBtn = document.getElementById('inlineNewAnalysisBtn');
+    
+    if (inlineDownloadBtn) {
+        inlineDownloadBtn.addEventListener('click', async () => {
+            if (!currentDiagnosis || !currentPatientId) {
+                alert('No diagnosis data available');
+                return;
+            }
+            
+            try {
+                const isBatch = currentDiagnosis.total !== undefined || (currentDiagnosis.results && currentDiagnosis.results.length > 1);
+                const requestBody = {
+                    patient_id: currentPatientId,
+                    report_type: 'pdf',
+                    is_batch: isBatch
+                };
+                
+                // For batch reports, send diagnosis_ids; for single reports, send diagnosis_id
+                if (isBatch && currentDiagnosisIds && currentDiagnosisIds.length > 0) {
+                    requestBody.diagnosis_ids = currentDiagnosisIds;
+                } else if (currentDiagnosis.diagnosis_id) {
+                    requestBody.diagnosis_id = currentDiagnosis.diagnosis_id;
+                } else if (currentDiagnosis.id) {
+                    requestBody.diagnosis_id = currentDiagnosis.id;
+                }
+                
+                const response = await fetch('/download/report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    // Use the correct filename format from the backend
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'report.pdf';
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                        if (filenameMatch && filenameMatch[1]) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    const errorText = await response.text();
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        alert('Failed to download report: ' + (errorData.error || 'Unknown error'));
+                    } catch (e) {
+                        alert('Failed to download report: ' + errorText);
+                    }
+                }
+            } catch (error) {
+                alert('Error downloading report: ' + error.message);
+            }
+        });
+    }
+    
+    if (inlineNewAnalysisBtn) {
+        inlineNewAnalysisBtn.addEventListener('click', () => {
+            // Refresh the page completely
+            window.location.reload();
+        });
+    }
+}
+
+// Handle form submission
+analysisForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Validate patient selection
+    if (!selectedPatient) {
+        alert('Please select a patient before analyzing');
+        return;
+    }
+    
+    // Validate files
+    const files = Array.from(imageFile.files);
+    if (files.length === 0) {
+        alert('Please select at least one image to analyze');
+        return;
+    }
+    
+    // Create FormData with selected patient data
+    const formData = new FormData();
+    
+    // Add patient data from hidden inputs (from selected patient)
+    formData.append('first_name', document.getElementById('hiddenFirstName').value);
+    formData.append('last_name', document.getElementById('hiddenLastName').value);
+    formData.append('medical_id', document.getElementById('hiddenMedicalId').value);
+    formData.append('gender', document.getElementById('hiddenGender').value);
+    formData.append('email', document.getElementById('hiddenEmail').value);
+    formData.append('phone', document.getElementById('hiddenPhone').value);
+    formData.append('notes', document.getElementById('hiddenNotes').value);
+    formData.append('diagnosis_notes', document.querySelector('textarea[name="diagnosis_notes"]').value);
+    
+    // Add files
+    files.forEach(file => {
+        formData.append('files', file);
+    });
+    
+    // Show processing
+    processingProgress.classList.remove('hidden');
+    errorDiv.classList.add('hidden');
+    document.getElementById('analyzeBtn').classList.add('hidden');
+    
+    try {
+        // Reset progress
+        updateProgress(1, 0);
+        
+        // Simulate progress
+        setTimeout(() => updateProgress(2, 25), 500);
+        setTimeout(() => updateProgress(3, 50), 1500);
+        setTimeout(() => updateProgress(4, 75), 2500);
+        
+        const response = await fetch('/batch_predict', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Analysis failed');
+        }
+        
+        const data = await response.json();
+        updateProgress(4, 100);
+        
+        // Store patient ID and diagnosis data
+        currentPatientId = data.patient_id;
+        currentDiagnosis = data;
+        if (data.diagnosis_ids) {
+            currentDiagnosisIds = data.diagnosis_ids;
+        }
+        
+        // Hide progress after a short delay
+        setTimeout(() => {
+            processingProgress.classList.add('hidden');
+            document.getElementById('inlineResults').classList.remove('hidden');
+            document.getElementById('nonEditablePatientInfo').classList.remove('hidden');
+            document.getElementById('conclusionSection').classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            loadingSection.classList.add('hidden');
+            
+            // Hide the search section when results are shown
+            document.getElementById('patientSearchSection').classList.add('hidden');
+            
+            retinalImagesSection.classList.add('hidden');
+            clinicalObservationsSection.classList.add('hidden');
+            
+            showNonEditablePatientInfo();
+            
+            // Display results
+            if (data.results && data.results.length >= 1) {
+                displayInlineBatchResults(data);
+                generateConclusion(data.results);
+            } else if (data.class_name) {
+                const batchData = {
+                    results: [data],
+                    total: 1,
+                    successful: 1,
+                    patient_id: data.patient_id
+                };
+                displayInlineBatchResults(batchData);
+                generateConclusion([data]);
+            }
+            
+            // Load AI models when results are shown
+            loadAiModels();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        processingProgress.classList.add('hidden');
+        document.getElementById('analyzeBtn').classList.remove('hidden');
+        errorDiv.textContent = error.message || 'Error processing images';
+        errorDiv.classList.remove('hidden');
+    }
+});
+
+// Function to generate and display conclusion based on analysis results
+function generateConclusion(results) {
+    if (!results || results.length === 0) return;
+    
+    // Count occurrences of each DR class
+    const classCount = {
+        0: 0,  // No DR
+        1: 0,  // Mild
+        2: 0,  // Moderate
+        3: 0,  // Severe
+        4: 0   // Proliferative
+    };
+    
+    // Count each class from results
+    results.forEach(result => {
+        if (result.class_id !== undefined) {
+            classCount[result.class_id]++;
+        } else if (result.predicted_class !== undefined) {
+            classCount[result.predicted_class]++;
+        }
+    });
+    
+    // Find the most common class
+    const maxCount = Math.max(...Object.values(classCount));
+    let mostCommonClass = 0;
+    
+    for (let classId in classCount) {
+        if (classCount[classId] === maxCount) {
+            mostCommonClass = parseInt(classId);
+            break;
+        }
+    }
+    
+    // Generate conclusion based on most common class
+    let conclusionText = '';
+    
+    if (mostCommonClass === 0) {
+        conclusionText = '✓ No signs of Diabetic Retinopathy detected. Patient shows healthy retinal status.';
+    } else if (mostCommonClass === 1 || mostCommonClass === 2) {
+        conclusionText = '⚠️ Early-stage Diabetic Retinopathy detected. Follow-up evaluation recommended within 3-6 months.';
+    } else if (mostCommonClass === 3 || mostCommonClass === 4) {
+        conclusionText = '🔴 Advanced Diabetic Retinopathy detected. Immediate medical attention required. Consider specialist referral.';
+    }
+    
+    // Display the conclusion
+    const conclusionSection = document.getElementById('conclusionSection');
+    const conclusionTextElement = document.getElementById('conclusionText');
+    
+    conclusionTextElement.textContent = conclusionText;
+    conclusionSection.classList.remove('hidden');
+}
+
+// AI Model Selection and Generation
+let availableAiModels = [];
+let selectedAiModelId = null;
+
+// Load AI models for dropdown
+async function loadAiModels() {
+    try {
+        const response = await fetch('/ai-models');
+        const data = await response.json();
+        
+        if (response.ok) {
+            availableAiModels = data.models || [];
+            updateAiModelDropdown(availableAiModels, data.active_model);
+            
+            // Show AI section if models are available
+            if (availableAiModels.length > 0) {
+                document.getElementById('aiSuggestionsSection').classList.remove('hidden');
+            }
+        } else {
+            console.error('Failed to load AI models:', data.error);
+        }
+    } catch (error) {
+        console.error('Error loading AI models:', error);
+    }
+}
+
+// Update AI model dropdown
+function updateAiModelDropdown(models, activeModel) {
+    const select = document.getElementById('aiModelSelect');
+    
+    if (models.length === 0) {
+        select.innerHTML = '<option value="">No AI models configured</option>';
+        select.disabled = true;
+        return;
+    }
+    
+    const enabledModels = models.filter(model => model.enabled);
+    
+    if (enabledModels.length === 0) {
+        select.innerHTML = '<option value="">No enabled models</option>';
+        select.disabled = true;
+        return;
+    }
+    
+    select.disabled = false;
+    select.innerHTML = enabledModels.map(model => 
+        `<option value="${model.id}" ${activeModel && activeModel.id === model.id ? 'selected' : ''}>
+            ${model.provider_name} • ${model.model_name}
+        </option>`
+    ).join('');
+    
+    selectedAiModelId = activeModel ? activeModel.id : enabledModels[0]?.id;
+}
+
+// Update selected model
+document.getElementById('aiModelSelect').addEventListener('change', async function() {
+    const modelId = parseInt(this.value);
+    if (!modelId) return;
+    
+    try {
+        const response = await fetch('/update-selected-model', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ model_id: modelId })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            selectedAiModelId = modelId;
+            console.log('Selected AI model updated:', modelId);
+        } else {
+            console.error('Failed to update selected model:', data.error);
+        }
+    } catch (error) {
+        console.error('Error updating selected model:', error);
+    }
+});
+
+// Generate AI summary
+document.getElementById('generateAiSummaryBtn').addEventListener('click', async function() {
+    if (!selectedAiModelId) {
+        showAiError('Please select an AI model before generating AI summary.');
+        return;
+    }
+    
+    // Prepare comprehensive clinical data
+    const clinicalData = {
+        patient_id: selectedPatient?.id || document.getElementById('selectedPatientId').value,
+        patient_info: {
+            first_name: document.getElementById('hiddenFirstName').value,
+            last_name: document.getElementById('hiddenLastName').value,
+            age: selectedPatient?.age || 'Not specified',
+            gender: document.getElementById('hiddenGender').value
+        },
+        results: currentDiagnosis?.results || (currentDiagnosis?.class_name ? [{
+            class_name: currentDiagnosis.class_name,
+            confidence_percent: currentDiagnosis.confidence_percent
+        }] : []),
+        conclusion: document.getElementById('conclusionText').textContent,
+        clinical_notes: document.querySelector('textarea[name="diagnosis_notes"]').value
+    };
+    
+    // Validate that we have basic patient info
+    const patientName = `${clinicalData.patient_info.first_name} ${clinicalData.patient_info.last_name}`.trim();
+    if (!patientName) {
+        showAiError('Patient information is required to generate personalized AI summary.');
+        return;
+    }
+    
+    // Show loading state
+    document.getElementById('aiLoadingSection').classList.remove('hidden');
+    document.getElementById('aiSuggestionsContent').classList.add('hidden');
+    document.getElementById('aiErrorSection').classList.add('hidden');
+    
+    try {
+        const response = await fetch('/generate-ai-suggestions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                patient_id: clinicalData.patient_id,
+                patient_info: clinicalData.patient_info,
+                results: clinicalData.results,
+                conclusion: clinicalData.conclusion,
+                clinical_notes: clinicalData.clinical_notes,
+                model_id: selectedAiModelId
+            })
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('aiLoadingSection').classList.add('hidden');
+        
+        if (response.ok) {
+            displayAiSuggestions(data, clinicalData.patient_info);
+        } else {
+            showAiError(data.error || 'Failed to generate AI suggestions');
+        }
+    } catch (error) {
+        document.getElementById('aiLoadingSection').classList.add('hidden');
+        showAiError('Error generating AI suggestions: ' + error.message);
+    }
+});
+
+// Display AI suggestions with patient info
+function displayAiSuggestions(data, patientInfo) {
+    const container = document.getElementById('aiSuggestionsContent');
+    const patientName = `${patientInfo.first_name} ${patientInfo.last_name}`;
+    const patientAge = patientInfo.age;
+    const patientGender = patientInfo.gender;
+    
+    let html = `
+        <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded">
+            <h3 class="font-bold text-blue-900 mb-2 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                </svg>
+                Patient Summary
+            </h3>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="font-semibold text-blue-700">Name:</span>
+                    <span class="text-blue-900 ml-2">${patientName}</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-blue-700">Age:</span>
+                    <span class="text-blue-900 ml-2">${patientAge}</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-blue-700">Gender:</span>
+                    <span class="text-blue-900 ml-2">${patientGender}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Clinical Summary -->
+            <div class="ai-suggestion-card bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
+                <h3 class="font-bold text-blue-900 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    Clinical Summary
+                </h3>
+                <p class="text-blue-800 text-sm leading-relaxed">${data.summary_for_doctor || 'No clinical summary provided.'}</p>
+            </div>
+            
+            <!-- Patient-Friendly Summary -->
+            <div class="ai-suggestion-card bg-green-50 border-l-4 border-green-500 p-6 rounded-r-lg">
+                <h3 class="font-bold text-green-900 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    Patient-Friendly Summary
+                </h3>
+                <p class="text-green-800 text-sm leading-relaxed">${data.patient_friendly_summary || 'No patient summary provided.'}</p>
+            </div>
+        </div>
+        
+        <!-- Treatment Plan -->
+        <div class="ai-suggestion-card bg-white border border-gray-200 rounded-lg p-6">
+            <h3 class="font-bold text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                </svg>
+                Treatment Plan for ${patientName}
+            </h3>
+            <div class="space-y-3">
+    `;
+    
+    if (data.treatment_plan && data.treatment_plan.length > 0) {
+        data.treatment_plan.forEach((step, index) => {
+            html += `
+                <div class="treatment-step">
+                    <span class="text-gray-700 text-sm">${step}</span>
+                </div>
+            `;
+        });
+    } else {
+        html += `<p class="text-gray-500 text-sm">No specific treatment plan provided</p>`;
+    }
+    
+    html += `</div></div>`;
+    
+    // Medication and Lifestyle
+    html += `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Medication Suggestions -->
+            <div class="ai-suggestion-card bg-orange-50 border-l-4 border-orange-500 p-6 rounded-r-lg">
+                <h3 class="font-bold text-orange-900 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 1H6v8l4-2 4 2V6z" clip-rule="evenodd"></path>
+                    </svg>
+                    Medication Suggestions
+                </h3>
+                <div class="space-y-2">
+    `;
+    
+    if (data.medication_suggestions && data.medication_suggestions.length > 0) {
+        data.medication_suggestions.forEach(med => {
+            html += `<p class="text-orange-800 text-sm">• ${med}</p>`;
+        });
+    } else {
+        html += `<p class="text-orange-600 text-sm">No specific medication suggestions</p>`;
+    }
+    
+    html += `</div></div>`;
+    
+    // Lifestyle Recommendations
+    html += `
+            <div class="ai-suggestion-card bg-teal-50 border-l-4 border-teal-500 p-6 rounded-r-lg">
+                <h3 class="font-bold text-teal-900 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                    </svg>
+                    Lifestyle Recommendations
+                </h3>
+                <div class="space-y-2">
+    `;
+    
+    if (data.lifestyle_recommendations && data.lifestyle_recommendations.length > 0) {
+        data.lifestyle_recommendations.forEach(rec => {
+            html += `<p class="text-teal-800 text-sm">• ${rec}</p>`;
+        });
+    } else {
+        html += `<p class="text-teal-600 text-sm">No specific lifestyle recommendations</p>`;
+    }
+    
+    html += `</div></div></div>`;
+    
+    // Follow-up and Warnings
+    html += `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Follow-up -->
+            <div class="ai-suggestion-card bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-lg">
+                <h3 class="font-bold text-indigo-900 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                    </svg>
+                    Follow-up Interval
+                </h3>
+                <p class="text-indigo-800 text-sm font-medium">${data.followup_interval || 'Not specified'}</p>
+            </div>
+            
+            <!-- Red Flag Warnings -->
+            <div class="ai-suggestion-card bg-red-50 border-l-4 border-red-500 p-6 rounded-r-lg">
+                <h3 class="font-bold text-red-900 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    Red Flag Warnings
+                </h3>
+                <div class="space-y-2">
+    `;
+    
+    if (data.red_flag_warnings && data.red_flag_warnings.length > 0) {
+        data.red_flag_warnings.forEach(warning => {
+            html += `
+                <div class="warning-item">
+                    <span class="text-red-700 text-sm">${warning}</span>
+                </div>
+            `;
+        });
+    } else {
+        html += `<p class="text-red-600 text-sm">No specific warnings</p>`;
+    }
+    
+    html += `</div></div></div>`;
+    
+    // Disclaimer
+    if (data.disclaimer) {
+        html += `
+            <div class="bg-gray-100 border border-gray-300 p-4 rounded-lg">
+                <p class="text-gray-600 text-xs italic">${data.disclaimer}</p>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+}
+
+// Show AI error
+function showAiError(message) {
+    const errorSection = document.getElementById('aiErrorSection');
+    errorSection.textContent = message;
+    errorSection.classList.remove('hidden');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Diabetic Retinopathy Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Custom Input Styling */
+        .otp-input {
+            width: 3.5rem; /* ~56px */
+            height: 4rem; /* ~64px */
+            font-size: 1.5rem;
+            text-align: center;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.75rem;
+            background-color: #f8fafc; /* slate-50 */
+            color: #1e293b; /* slate-800 */
+            transition: all 0.2s ease-in-out;
+            font-weight: 600;
+        }
+
+        .otp-input:focus {
+            border-color: #2563eb; /* blue-600 */
+            background-color: #ffffff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Medical Abstract Background Pattern */
+        .medical-bg {
+            background-color: #1e293b;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .medical-bg::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        /* Smooth fade for error messages */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen flex">
+
+    <div class="hidden lg:flex lg:w-1/2 medical-bg flex-col justify-between p-12 text-white">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600/20 p-2 rounded-lg backdrop-blur-sm border border-blue-400/30">
+                <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <span class="text-lg font-semibold tracking-wide">RetinaAI Check</span>
+        </div>
+
+        <div class="max-w-md">
+            <h2 class="text-4xl font-bold mb-6 leading-tight">Secure Access to Medical Screening.</h2>
+            <p class="text-slate-300 text-lg leading-relaxed">
+                Our AI-driven system assists in the early detection of diabetic retinopathy with medical-grade precision. Please verify your identity to continue.
+            </p>
+        </div>
+
+        <div class="text-sm text-slate-400">
+            &copy; 2024 Diabetic Retinopathy Detection System
+        </div>
+    </div>
+
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
+        <div class="w-full max-w-md space-y-8">
+            
+            <div class="lg:hidden text-center mb-8">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900">RetinaAI Check</h2>
+            </div>
+
+            <div class="text-center lg:text-left">
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Verify email address</h1>
+                <p class="mt-2 text-slate-500">
+                    We've sent a 6-digit code to your email. Enter it below to secure your account.
+                </p>
+            </div>
+
+            <form id="otpForm" class="mt-8 space-y-6">
+                
+                <div class="space-y-4">
+                    <label class="block text-sm font-medium text-slate-700">Authentication Code</label>
+                    <div id="otpContainer" class="flex justify-between gap-2 sm:gap-3">
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="one-time-code">
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1">
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2">
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3">
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4">
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5">
+                    </div>
+                    <input type="hidden" id="otpCode" name="otp">
+                </div>
+
+                <div id="errorMessage" class="hidden animate-fade-in p-4 rounded-lg bg-red-50 border border-red-100 flex items-start gap-3">
+                    <svg class="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm text-red-600 font-medium"></span>
+                </div>
+
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2 text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="font-medium">Expires in <span id="timer" class="text-slate-900">10:00</span></span>
+                    </div>
+
+                    <div class="text-right">
+                        <button id="resendBtn" class="font-semibold text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            Resend Code
+                        </button>
+                        <p id="resendTimer" class="hidden text-xs text-slate-400 mt-1">Wait <span id="resendTime">30</span>s</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-blue-500/30">
+                    Verify & Proceed
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                 {% if mode == 'login' %}
+                    <a href="{{ url_for('auth.login') }}" class="group inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
+                        <svg class="w-4 h-4 mr-2 text-slate-400 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Back to Login
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('auth.signup') }}" class="group inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
+                        <svg class="w-4 h-4 mr-2 text-slate-400 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Back to Sign Up
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const otpCode = document.getElementById('otpCode');
+        const otpForm = document.getElementById('otpForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const timerDisplay = document.getElementById('timer');
+        const resendBtn = document.getElementById('resendBtn');
+        const resendTimer = document.getElementById('resendTimer');
+        const resendTime = document.getElementById('resendTime');
+
+        let timerInterval;
+        let resendTimerInterval;
+        let timeLeft = 600; // 10 minutes
+        let resendEnabled = false;
+
+        // Auto-focus and move between inputs
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value && /[0-9]/.test(e.target.value)) {
+                    if (index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                }
+                updateOtpCode();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').slice(0, 6);
+                pastedData.split('').forEach((char, i) => {
+                    if (i < otpInputs.length && /[0-9]/.test(char)) {
+                        otpInputs[i].value = char;
+                    }
+                });
+                updateOtpCode();
+                otpInputs[Math.min(pastedData.length - 1, otpInputs.length - 1)].focus();
+            });
+        });
+
+        function updateOtpCode() {
+            const otp = Array.from(otpInputs).map(input => input.value).join('');
+            otpCode.value = otp;
+        }
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    otpForm.disabled = true;
+                    errorMessage.innerHTML = '<span class="text-sm font-medium">OTP has expired. Please request a new one.</span>';
+                    errorMessage.classList.remove('hidden');
+                }
+            }, 1000);
+        }
+
+        // Resend OTP
+        function startResendTimer() {
+            let resendTimeLeft = 30;
+            resendBtn.disabled = true;
+            resendTimer.classList.remove('hidden');
+
+            resendTimerInterval = setInterval(() => {
+                resendTimeLeft--;
+                resendTime.textContent = resendTimeLeft;
+
+                if (resendTimeLeft <= 0) {
+                    clearInterval(resendTimerInterval);
+                    resendBtn.disabled = false;
+                    resendTimer.classList.add('hidden');
+                }
+            }, 1000);
+        }
+
+        resendBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            try {
+                // Use specific endpoints for signup vs login
+                let url;
+                if ('{{ mode }}' === 'login') {
+                    url = '{{ url_for("auth.verify_otp_login") }}';
+                } else {
+                    url = '{{ url_for("auth.resend_signup_otp") }}';
+                }
+                
+                const response = await fetch(url, {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        errorMessage.classList.add('hidden');
+                        // Update error message style for success
+                        errorMessage.className = "hidden animate-fade-in p-4 rounded-lg bg-green-50 border border-green-100 flex items-start gap-3";
+                        errorMessage.innerHTML = '<svg class="w-5 h-5 text-green-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span class="text-sm text-green-700 font-medium">OTP has been resent to your email!</span>';
+                        errorMessage.classList.remove('hidden');
+                        
+                        // Reset inputs
+                        otpInputs.forEach(input => input.value = '');
+                        otpInputs[0].focus();
+                        
+                        // Reset timer
+                        timeLeft = 600;
+                        clearInterval(timerInterval); // Clear existing interval before starting new one
+                        startTimer();
+                        startResendTimer();
+                        
+                        // Revert error message style after delay (optional, but good practice)
+                        setTimeout(() => {
+                             errorMessage.className = "hidden animate-fade-in p-4 rounded-lg bg-red-50 border border-red-100 flex items-start gap-3";
+                        }, 5000);
+
+                    } else {
+                        errorMessage.innerHTML = `<span class="text-sm font-medium">${data.error || 'Failed to resend OTP'}</span>`;
+                        errorMessage.classList.remove('hidden');
+                    }
+                } else {
+                    errorMessage.innerHTML = '<span class="text-sm font-medium">Error resending OTP. Please try again.</span>';
+                    errorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorMessage.innerHTML = '<span class="text-sm font-medium">Error resending OTP. Please try again.</span>';
+                errorMessage.classList.remove('hidden');
+            }
+        });
+
+        otpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const otp = otpCode.value;
+
+            if (otp.length !== 6) {
+                errorMessage.innerHTML = '<span class="text-sm font-medium">Please enter a valid 6-digit OTP</span>';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                // Use specific endpoints for signup vs login
+                let url;
+                if ('{{ mode }}' === 'login') {
+                    url = '{{ url_for("auth.verify_otp_login") }}';
+                } else {
+                    url = '{{ url_for("auth.verify_otp_signup") }}';
+                }
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ otp })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    window.location.href = data.redirect;
+                } else {
+                    errorMessage.innerHTML = `<span class="text-sm font-medium">${data.error || 'Verification failed'}</span>`;
+                    errorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorMessage.innerHTML = '<span class="text-sm font-medium">An error occurred. Please try again.</span>';
+                errorMessage.classList.remove('hidden');
+            }
+        });
+
+        // Start timer on page load
+        startTimer();
+        otpInputs[0].focus();
+    </script>
+</body>
+</html>

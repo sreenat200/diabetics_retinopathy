@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RetinaAI{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Smooth transitions for width changes (disabled during resizing via JS) */
+        .sidebar-transition {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .sidebar.collapsed {
+            width: 80px !important; /* Slightly narrower collapsed state */
+        }
+        
+        .sidebar.collapsed .sidebar-text,
+        .sidebar.collapsed .sidebar-label,
+        .sidebar.collapsed .profile-details,
+        .sidebar.collapsed .logo-text {
+            display: none;
+            opacity: 0;
+        }
+        
+        /* Center content when collapsed */
+        .sidebar.collapsed .sidebar-link {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .sidebar.collapsed .sidebar-icon {
+            margin-right: 0;
+        }
+
+        /* Center header items when collapsed */
+        .sidebar.collapsed .header-content {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        
+        .sidebar.collapsed .logo-container {
+            margin-right: 0;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+    
+    {% block layout %}
+    <div class="flex h-screen overflow-hidden">
+        
+        {% if current_user.is_authenticated %}
+        <aside id="mainSidebar" class="sidebar sidebar-transition w-64 bg-slate-50/70 backdrop-blur-2xl flex-shrink-0 hidden md:flex flex-col border-r border-white/50 z-20 relative shadow-[4px_0_24px_0_rgba(0,0,0,0.02)] min-w-[80px] max-w-[500px]">
+            
+            <div id="sidebarResizer" class="absolute right-0 top-0 w-1.5 h-full cursor-ew-resize hover:bg-blue-500/50 transition-colors z-50 group">
+                <div class="w-0.5 h-full bg-slate-300/50 mx-auto group-hover:bg-blue-400"></div>
+            </div>
+
+            <div class="header-content h-20 flex items-center justify-between px-6 relative overflow-hidden shrink-0 transition-all duration-300">
+                <div class="flex items-center">
+                    <div class="logo-container w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30 mr-3 shrink-0 transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </div>
+                    <span class="logo-text text-xl font-extrabold text-slate-900 tracking-tight drop-shadow-sm whitespace-nowrap">RetinaAI</span>
+                </div>
+                
+                <button id="sidebarToggle" class="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-4 py-4 no-scrollbar overflow-x-hidden">
+                <nav class="space-y-1">
+                    <p class="sidebar-label px-4 text-xs font-bold text-slate-500/80 uppercase tracking-widest mb-4 mt-2 whitespace-nowrap">Main Menu</p>
+                    
+                    {% set navigation = [
+                        ('main.dashboard', 'Dashboard', 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z'),
+                        ('main.analyze', 'Analyze', 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'),
+                        ('main.register_patient', 'Register Patient', 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z'),
+                        ('main.patients', 'Patients List', 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'),
+                        ('main.analytics', 'Analytics', 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z')
+                    ] %}
+
+                    {% for endpoint, name, icon_path in navigation %}
+                    <a href="{{ url_for(endpoint) }}" 
+                       class="sidebar-link flex items-center px-4 py-3.5 mb-2 rounded-2xl transition-all duration-200 group font-bold text-sm border border-transparent whitespace-nowrap overflow-hidden
+                       {{ 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]' if request.endpoint == endpoint else 'text-slate-600 hover:bg-white/60 hover:border-white/50 hover:text-blue-600 hover:shadow-sm' }}">
+                        <svg class="sidebar-icon w-5 h-5 mr-3 shrink-0 transition-colors {{ 'text-white' if request.endpoint == endpoint else 'text-slate-400 group-hover:text-blue-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icon_path }}"></path>
+                        </svg>
+                        <span class="sidebar-text">{{ name }}</span>
+                    </a>
+                    {% endfor %}
+
+                    <p class="sidebar-label px-4 text-xs font-bold text-slate-500/80 uppercase tracking-widest mb-4 mt-8 whitespace-nowrap">Account</p>
+                    
+                    <a href="{{ url_for('main.settings') }}" 
+                       class="sidebar-link flex items-center px-4 py-3.5 mb-2 rounded-2xl transition-all duration-200 group font-bold text-sm border border-transparent whitespace-nowrap overflow-hidden
+                       {{ 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' if request.endpoint == 'main.settings' else 'text-slate-600 hover:bg-white/60 hover:border-white/50 hover:text-blue-600 hover:shadow-sm' }}">
+                        <svg class="sidebar-icon w-5 h-5 mr-3 shrink-0 transition-colors {{ 'text-white' if request.endpoint == 'main.settings' else 'text-slate-400 group-hover:text-blue-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="sidebar-text">Settings</span>
+                    </a>
+
+                    <a href="{{ url_for('auth.logout') }}" 
+                       class="sidebar-link flex items-center px-4 py-3.5 mb-1 rounded-2xl transition-all duration-200 group font-bold text-sm text-slate-500 hover:bg-rose-50/80 hover:text-rose-600 border border-transparent hover:border-rose-100 whitespace-nowrap overflow-hidden">
+                        <svg class="sidebar-icon w-5 h-5 mr-3 shrink-0 text-slate-400 group-hover:text-rose-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span class="sidebar-text">Logout</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-4 border-t border-white/40 shrink-0">
+                <div class="flex items-center p-3 rounded-2xl bg-gradient-to-br from-white/60 to-white/30 backdrop-blur-md border border-white/50 shadow-sm overflow-hidden">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shadow-inner shrink-0">
+                        {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                    </div>
+                    <div class="profile-details ml-3 overflow-hidden flex-1 min-w-0">
+                        <p class="text-sm font-bold text-slate-900 truncate">{{ current_user.first_name }} {{ current_user.last_name }}</p>
+                        <p class="text-xs text-slate-500 truncate font-medium">{{ current_user.designation or 'Doctor' }}</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        {% endif %}
+
+        {% if current_user.is_authenticated %}
+        <div id="mobileOverlay" class="mobile-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+        
+        <aside id="mobileSidebar" class="mobile-sidebar fixed inset-y-0 left-0 w-72 bg-white/90 backdrop-blur-2xl flex flex-col z-50 transform -translate-x-full transition-transform duration-300 border-r border-white/50 shadow-2xl">
+             <div class="h-20 flex items-center justify-between px-6 border-b border-slate-100/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </div>
+                    <span class="text-lg font-extrabold text-slate-900">RetinaAI</span>
+                </div>
+                <button id="mobileSidebarClose" class="p-2 text-slate-400 hover:text-slate-600 bg-white/50 rounded-full">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                {% for endpoint, name, icon_path in navigation %}
+                <a href="{{ url_for(endpoint) }}" 
+                   class="flex items-center px-4 py-3.5 rounded-2xl font-bold text-sm transition-all border border-transparent
+                   {{ 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' if request.endpoint == endpoint else 'text-slate-600 hover:bg-white/60 hover:text-blue-600' }}">
+                    <svg class="w-5 h-5 mr-3 {{ 'text-white' if request.endpoint == endpoint else 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icon_path }}"></path>
+                    </svg>
+                    {{ name }}
+                </a>
+                {% endfor %}
+            </div>
+
+            <div class="p-4 border-t border-slate-100/50">
+                <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-3.5 rounded-2xl text-rose-500 font-bold text-sm hover:bg-rose-50 transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+        {% endif %}
+
+        <main class="flex-1 overflow-y-auto w-full relative">
+            {% if current_user.is_authenticated %}
+            <div class="md:hidden h-16 bg-white/60 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between px-4 border-b border-white/40 shadow-sm">
+                <button id="mobileMenuButton" class="p-2 -ml-2 text-slate-700 hover:bg-white/50 rounded-xl transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <span class="font-extrabold text-slate-900 tracking-tight">RetinaAI</span>
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 border border-blue-200">
+                    {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="max-w-[1600px] mx-auto p-4 md:p-8">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Sidebar Toggle Logic ---
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('mainSidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    const icon = sidebarToggle.querySelector('svg');
+                    
+                    if (sidebar.classList.contains('collapsed')) {
+                        // Icon Points RIGHT (Expand)
+                        sidebar.style.width = ''; 
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>';
+                    } else {
+                        // Icon Points LEFT (Collapse)
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>';
+                    }
+                });
+            }
+
+            // --- Sidebar Resizing Logic ---
+            const resizer = document.getElementById('sidebarResizer');
+            if (resizer && sidebar) {
+                let isResizing = false;
+
+                resizer.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    isResizing = true;
+                    sidebar.classList.remove('sidebar-transition');
+                    document.body.style.cursor = 'ew-resize';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    if (sidebar.classList.contains('collapsed')) return;
+
+                    let newWidth = e.clientX;
+                    if (newWidth < 200) newWidth = 200;
+                    if (newWidth > 500) newWidth = 500;
+
+                    sidebar.style.width = `${newWidth}px`;
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        sidebar.classList.add('sidebar-transition');
+                        document.body.style.cursor = 'default';
+                    }
+                });
+            }
+            
+            // --- Mobile Menu Logic ---
+            const mobileMenuButton = document.getElementById('mobileMenuButton');
+            const mobileSidebar = document.getElementById('mobileSidebar');
+            const mobileSidebarClose = document.getElementById('mobileSidebarClose');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            
+            function toggleMobileMenu() {
+                const isHidden = mobileSidebar.classList.contains('-translate-x-full');
+                if (isHidden) {
+                    mobileSidebar.classList.remove('-translate-x-full');
+                    mobileOverlay.classList.remove('hidden');
+                } else {
+                    mobileSidebar.classList.add('-translate-x-full');
+                    mobileOverlay.classList.add('hidden');
+                }
+            }
+
+            if (mobileMenuButton) mobileMenuButton.addEventListener('click', toggleMobileMenu);
+            if (mobileSidebarClose) mobileSidebarClose.addEventListener('click', toggleMobileMenu);
+            if (mobileOverlay) mobileOverlay.addEventListener('click', toggleMobileMenu);
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
